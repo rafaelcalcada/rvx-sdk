@@ -96,7 +96,7 @@ target_link_options(rvx_hal
 )
 
 # Add compile definition if RVX_BARE_METAL is defined
-if(DEFINED RVX_BARE_METAL)
+if(DEFINED RVX_BARE_METAL AND RVX_BARE_METAL)
   target_compile_definitions(rvx_hal INTERFACE RVX_BARE_METAL)
 endif()
 
