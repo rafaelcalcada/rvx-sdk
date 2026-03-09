@@ -9,6 +9,7 @@
 #endif
 
 #include <stdbool.h> // for bool type
+#include <stddef.h>  // for size_t
 #include <stdint.h>  // for uint32_t, uint16_t, uint8_t types
 
 /// Default base address of the RVX UART peripheral.
@@ -22,6 +23,9 @@
 
 /// Default base address of the RVX SPI Manager peripheral.
 #define RVX_SPI_MANAGER_ADDRESS (RvxSpiManager *)0x40003000U
+
+/// Default base address of the RVX I2C peripheral.
+#define RVX_I2C_ADDRESS (RvxI2c *)0x40004000U
 
 /// Mark a function or variable as weak, allowing it to be overridden by other definitions.
 #define RVX_WEAK __attribute__((weak))
@@ -168,6 +172,22 @@ typedef enum RvxGpioPinDirection
   RVX_GPIO_OUTPUT = 1 ///< Output direction.
 } RvxGpioPinDirection;
 
+/// The I2C command.
+typedef enum RvxI2cCommand
+{
+  RVX_I2C_COMMAND_NOP = 0,   ///< I2C Command nop.
+  RVX_I2C_COMMAND_START = 1, ///< I2C Command start.
+  RVX_I2C_COMMAND_STOP = 2,  ///< I2C Command stop.
+  RVX_I2C_COMMAND_DATA = 3   ///< I2C Command data.
+} RvxI2cCommand;
+
+/// @name Bit masks for I2C Status register.
+/// @{
+#define RVX_I2C_STATUS_RUN_BITMASK (1U << 0U)           ///< Bitmask for the I2C: Status register run bit.
+#define RVX_I2C_STATUS_NOACKNOWLEDGE_BITMASK (1U << 1U) ///< Bitmask for the I2C: Status register no acknowledge bit.
+#define RVX_I2C_STATUS_IRQ_BITMASK (1U << 2U)           ///< Bitmask for the I2C: Status register IRQ bit.
+/// @}
+
 /// The SPI mode configuration.
 typedef enum RvxSpiMode
 {
@@ -176,6 +196,15 @@ typedef enum RvxSpiMode
   RVX_SPI_MODE_2 = 2, ///< SPI Mode 2 (CPOL 1 / CPHA 0).
   RVX_SPI_MODE_3 = 3  ///< SPI Mode 3 (CPOL 1 / CPHA 1).
 } RvxSpiMode;
+
+/// Provide access to I2C registers.
+typedef struct RVX_ALIGNED RvxI2c
+{
+  volatile uint32_t RVX_I2C_PRESCALE_REG; ///< RVX I2C Prescale Register.
+  volatile uint32_t RVX_I2C_DATA_REG;     ///< RVX I2C Data Register.
+  volatile uint32_t RVX_I2C_COMMAND_REG;  ///< RVX I2C Command Register.
+  volatile uint32_t RVX_I2C_STATUS_REG;   ///< RVX I2C Status Register.
+} RvxI2c;
 
 /// Provide access to GPIO registers.
 typedef struct RVX_ALIGNED RvxGpio
@@ -767,6 +796,214 @@ static inline void rvx_gpio_multi_pin_clear(RvxGpio *gpio_address, const uint32_
 static inline void rvx_gpio_multi_pin_set(RvxGpio *gpio_address, const uint32_t bitmask)
 {
   gpio_address->RVX_GPIO_SET_REG = bitmask;
+}
+
+/**
+ * @brief Set the I2C clock (SCL) frequency.
+ *
+ * This function configures the prescale that controls the frequency of the SCL output pin.
+ * The SCL pin frequency is prescale from the system clock according to:
+ *
+ *     `f_SCL = f_clock / [4 * (prescale + 1)]`
+ *
+ * where:
+ *
+ * - `f_clock` is the system clock frequency
+ *
+ * - `prescale` is the value set by this function
+ *
+ * A smaller divider gives a faster I2C clock:
+ *
+ * - `prescale = 0` → fastest clock: `f_SCL = f_clock / 4`
+ *
+ * - `prescale = 65534` → slowest clock: `f_SCL = f_clock / 262140`
+ *
+ * @param i2c_address Pointer to the base address of the I2C.
+ * @param prescale value (0–65534) that determines the SCL output frequency.
+ */
+static inline void rvx_i2c_prescale_set(RvxI2c *i2c_address, const uint16_t prescale)
+{
+  i2c_address->RVX_I2C_PRESCALE_REG = prescale;
+}
+
+/**
+ * @brief Read a received byte from the I2C.
+ *
+ * This function returns the byte received by the I2C.
+ *
+ * @param i2c_address Pointer to the base address of the I2C peripheral.
+ * @return The received byte.
+ */
+static inline uint8_t rvx_i2c_get_data(RvxI2c *i2c_address)
+{
+  return i2c_address->RVX_I2C_DATA_REG;
+}
+
+/**
+ * @brief Check if the I2C is busy.
+ *
+ * @param i2c_address Pointer to the base address of the I2C peripheral.
+ * @return `true` if the I2C is busy, `false` otherwise.
+ */
+static inline bool rvx_i2c_is_busy(RvxI2c *i2c_address)
+{
+  return i2c_address->RVX_I2C_STATUS_REG & RVX_I2C_STATUS_RUN_BITMASK;
+}
+
+/**
+ * @brief Busy-wait until the I2C is complete.
+ *
+ * This function continuously checks the I2C status register and returns only when the I2C is ready to
+ * send new run.
+ *
+ * @param i2c_address Pointer to the base address of the I2C peripheral.
+ */
+static inline void rvx_i2c_wait(RvxI2c *i2c_address)
+{
+  while (rvx_i2c_is_busy(i2c_address))
+    ;
+}
+
+/**
+ * @brief Check if the I2C received "no acknowledge".
+ *
+ * @param i2c_address Pointer to the base address of the I2C peripheral.
+ * @return `true` if the I2C is received "no acknowledge", `false` otherwise.
+ */
+static inline bool rvx_i2c_is_no_acknowledge(RvxI2c *i2c_address)
+{
+  return i2c_address->RVX_I2C_STATUS_REG & RVX_I2C_STATUS_NOACKNOWLEDGE_BITMASK;
+}
+
+/**
+ * @brief Check if there is an interrupt request on the I2C interface.
+ *
+ * @param i2c_address Pointer to the base address of the I2C peripheral.
+ * @return `true` if the I2C has an interrupt request, `false` otherwise.
+ */
+static inline bool rvx_i2c_is_irq(RvxI2c *i2c_address)
+{
+  return i2c_address->RVX_I2C_STATUS_REG & RVX_I2C_STATUS_IRQ_BITMASK;
+}
+
+/**
+ * @brief Clear an interrupt request on the I2C interface.
+ *
+ * @param i2c_address Pointer to the base address of the I2C peripheral.
+ */
+static inline void rvx_i2c_clear_irq(RvxI2c *i2c_address)
+{
+  RVX_SET_MASK(i2c_address->RVX_I2C_STATUS_REG, RVX_I2C_STATUS_IRQ_BITMASK);
+}
+
+/**
+ * @brief Run encode start condition on I2C interface.
+ *
+ * @param i2c_address Pointer to the base address of the I2C peripheral.
+ */
+static inline void rvx_i2c_run_start(RvxI2c *i2c_address)
+{
+  i2c_address->RVX_I2C_COMMAND_REG = RVX_I2C_COMMAND_START;
+  i2c_address->RVX_I2C_STATUS_REG = RVX_I2C_STATUS_RUN_BITMASK;
+  rvx_i2c_wait(i2c_address);
+}
+
+/**
+ * @brief Run encode stop condition on I2C interface.
+ *
+ * @param i2c_address Pointer to the base address of the I2C peripheral.
+ */
+static inline void rvx_i2c_run_stop(RvxI2c *i2c_address)
+{
+  i2c_address->RVX_I2C_COMMAND_REG = RVX_I2C_COMMAND_STOP;
+  i2c_address->RVX_I2C_STATUS_REG = RVX_I2C_STATUS_RUN_BITMASK;
+  rvx_i2c_wait(i2c_address);
+}
+
+/**
+ * @brief Run write data on I2C interface.
+ *
+ * @param i2c_address Pointer to the base address of the I2C peripheral.
+ * @param data The byte to write (`uint8_t`).
+ * @param is_acknowledge (`true` for set acknowledge or `false` for set no acknowledge).
+ */
+static inline void rvx_i2c_run_write(RvxI2c *i2c_address, const uint8_t data, const bool is_no_acknowledge)
+{
+  i2c_address->RVX_I2C_DATA_REG = data;
+  i2c_address->RVX_I2C_COMMAND_REG = RVX_I2C_COMMAND_DATA;
+  if (is_no_acknowledge)
+  {
+    i2c_address->RVX_I2C_STATUS_REG = RVX_I2C_STATUS_NOACKNOWLEDGE_BITMASK | RVX_I2C_STATUS_RUN_BITMASK;
+  }
+  else
+  {
+    i2c_address->RVX_I2C_STATUS_REG = RVX_I2C_STATUS_RUN_BITMASK;
+  }
+  rvx_i2c_wait(i2c_address);
+}
+
+/**
+ * @brief Run read data I2C interface with acknowledge or no acknowledge.
+ *
+ * @param i2c_address Pointer to the base address of the I2C peripheral.
+ * @param is_acknowledge (`true` for set acknowledge or `false` for set no acknowledge).
+ */
+static inline void rvx_i2c_run_read(RvxI2c *i2c_address, const bool is_no_acknowledge)
+{
+  rvx_i2c_run_write(i2c_address, 0xFF, is_no_acknowledge);
+}
+
+/**
+ * @brief Write data to a slave device on the I2C.
+ *
+ * @param i2c_address Pointer to the base address of the I2C peripheral.
+ * @param slave_address I2C Slave address (uint8_t).
+ * @param buffer Pointer to the source buffer (uint8_t *).
+ * @param size The size of data in the buffer (size_t).
+ * @return The acknowledge (`true` for all acknowledge or `false` no acknowledge).
+ */
+static inline bool rvx_i2c_write_to(RvxI2c *i2c_address, const uint8_t slave_address, const uint8_t *buffer,
+                                    const size_t size)
+{
+  rvx_i2c_run_write(i2c_address, (slave_address << 1) & 0xFE, true);
+  if (rvx_i2c_is_no_acknowledge(i2c_address))
+  {
+    return false;
+  }
+  for (size_t i = 0; i < size; i++)
+  {
+    rvx_i2c_run_write(i2c_address, *buffer++, true);
+    if (rvx_i2c_is_no_acknowledge(i2c_address))
+    {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * @brief Read data from a slave device on the I2C.
+ *
+ * @param i2c_address Pointer to the base address of the I2C peripheral.
+ * @param slave_address I2C Slave address (uint8_t).
+ * @param buffer Pointer to the destination buffer (uint8_t *).
+ * @param size The size of data in the buffer (size_t).
+ * @return The acknowledge (`true` for all acknowledge or `false` no acknowledge).
+ */
+static inline bool rvx_i2c_reade_from(RvxI2c *i2c_address, const uint8_t slave_address, uint8_t *buffer,
+                                      const size_t size)
+{
+  rvx_i2c_run_write(i2c_address, (slave_address << 1) | 0x01, true);
+  if (rvx_i2c_is_no_acknowledge(i2c_address))
+  {
+    return false;
+  }
+  for (size_t i = 0; i < size; i++)
+  {
+    rvx_i2c_run_read(i2c_address, (i + 1 == size));
+    *buffer++ = rvx_i2c_get_data(i2c_address);
+  }
+  return true;
 }
 
 /**
