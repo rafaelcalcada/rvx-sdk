@@ -22,6 +22,7 @@ if(NOT CMAKE_C_COMPILER)
   endif()
 
   set(CMAKE_C_COMPILER "${RISCV_TOOLCHAIN_PREFIX}gcc" CACHE FILEPATH "C compiler")
+  set(CMAKE_CXX_COMPILER "${RISCV_TOOLCHAIN_PREFIX}g++" CACHE FILEPATH "C++ compiler")
   set(CMAKE_ASM_COMPILER "${RISCV_TOOLCHAIN_PREFIX}gcc" CACHE FILEPATH "ASM compiler")
   set(CMAKE_OBJCOPY "${RISCV_TOOLCHAIN_PREFIX}objcopy" CACHE FILEPATH "objcopy tool")
   set(CMAKE_OBJDUMP "${RISCV_TOOLCHAIN_PREFIX}objdump" CACHE FILEPATH "objdump tool")
@@ -29,6 +30,7 @@ if(NOT CMAKE_C_COMPILER)
 
   # Prevent CMake from testing the compiler (important for cross-compilation)
   set(CMAKE_C_COMPILER_FORCED TRUE)
+  set(CMAKE_CXX_COMPILER_FORCED TRUE)
   set(CMAKE_ASM_COMPILER_FORCED TRUE)
 
   # Set system info
