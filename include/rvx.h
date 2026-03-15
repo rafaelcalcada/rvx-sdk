@@ -506,7 +506,7 @@ static inline void rvx_irq_enable_direct_mode(void)
 }
 
 /**
- * @brief Configure the direction of the GPIO pin specified by `pin_index`.
+ * @brief Set the direction of the GPIO pin specified by `pin_index`.
  *
  * Valid values for `direction` are `RVX_GPIO_INPUT` or `RVX_GPIO_OUTPUT`. If `direction` is invalid
  * or if `pin_index` refers to a non-existent pin (beyond the number of implemented GPIO pins), no
@@ -515,8 +515,8 @@ static inline void rvx_irq_enable_direct_mode(void)
  * Example usage:
  * ```c *
  * // Configure pin 0 as output and pin 1 as input.
- * rvx_gpio_pin_configure(RVX_GPIO_ADDRESS, 0, RVX_GPIO_OUTPUT);
- * rvx_gpio_pin_configure(RVX_GPIO_ADDRESS, 1, RVX_GPIO_INPUT);
+ * rvx_gpio_set_direction(RVX_GPIO_ADDRESS, 0, RVX_GPIO_OUTPUT);
+ * rvx_gpio_set_direction(RVX_GPIO_ADDRESS, 1, RVX_GPIO_INPUT);
  * ```
  *
  * @param gpio_address Base address of the GPIO controller.
@@ -524,7 +524,7 @@ static inline void rvx_irq_enable_direct_mode(void)
  * @param direction Desired pin direction as `RvxGpioPinDirection` (`RVX_GPIO_INPUT` or
  * `RVX_GPIO_OUTPUT`).
  */
-static inline void rvx_gpio_pin_configure(RvxGpio *gpio_address, const uint8_t pin_index, RvxGpioPinDirection direction)
+static inline void rvx_gpio_set_direction(RvxGpio *gpio_address, const uint8_t pin_index, RvxGpioPinDirection direction)
 {
   if (direction == RVX_GPIO_OUTPUT)
   {
@@ -534,6 +534,149 @@ static inline void rvx_gpio_pin_configure(RvxGpio *gpio_address, const uint8_t p
   {
     RVX_CLR_BIT(gpio_address->RVX_GPIO_OUTPUT_ENABLE_REG, pin_index);
   }
+}
+
+/**
+ * @brief Set the direction of all GPIO pins simultaneously.
+ *
+ * Sets the direction of all GPIO pins according to `direction_mask`. Each bit set to 1 configures
+ * the corresponding pin as an output, and each bit set to 0 configures it as an input. Pins are
+ * updated simultaneously in a single register write.
+ *
+ * Only the lower bits of `direction_mask` corresponding to implemented GPIO pins are used. Any
+ * upper bits beyond the number of available pins are ignored by the hardware.
+ *
+ * Example usage:
+ * ```c *
+ * // Configure pins 1 and 3 as outputs, pins 0 and 2 as inputs (simultaneously).
+ * rvx_gpio_set_direction_mask(RVX_GPIO_ADDRESS, 0b1010);
+ * ```
+ *
+ * @note To set the direction of a single pin, use `rvx_gpio_set_direction()` instead.
+ *
+ * @param gpio_address Base address of the GPIO controller.
+ * @param direction_mask 32-bit bitmask specifying the direction of each pin:
+ *                       0 = input, 1 = output.
+ */
+static inline void rvx_gpio_set_direction_mask(RvxGpio *gpio_address, const uint32_t direction_mask)
+{
+  gpio_address->RVX_GPIO_OUTPUT_ENABLE_REG = direction_mask;
+}
+
+/**
+ * @brief Set a GPIO output pin to logic 1 (high).
+ *
+ * Drives the pin specified by `pin_index` to logic 1 (high) if it is configured as an output. If the pin
+ * is configured as an input, the output latch is updated without changing the pin state. The new
+ * value takes effect when the pin is later configured as an output.
+ *
+ * If `pin_index` refers to a non-existent pin (beyond the number of implemented GPIO pins), the
+ * operation is ignored without error.
+ *
+ * Example usage:
+ * ```c
+ * // Configure pin 0 as output.
+ * rvx_gpio_set_direction(RVX_GPIO_ADDRESS, 0, RVX_GPIO_OUTPUT);
+ *
+ * // Set pin 0 to logic 1 (high).
+ * rvx_gpio_set_high(RVX_GPIO_ADDRESS, 0);
+ * ```
+ *
+ * @param gpio_address Base address of the GPIO controller.
+ * @param pin_index Index of the GPIO pin to set.
+ */
+static inline void rvx_gpio_set_high(RvxGpio *gpio_address, const uint8_t pin_index)
+{
+  gpio_address->RVX_GPIO_SET_REG = 0x1U << pin_index;
+}
+
+/**
+ * @brief Set multiple GPIO output pins to logic 1 (high) simultaneously.
+ *
+ * Drives all GPIO pins corresponding to bits set to 1 in `bitmask` to logic 1 (high) if they are
+ * configured as outputs. Pins configured as inputs have their output latch updated without changing
+ * the pin state. The new value takes effect when the pin is later configured as an output.
+ *
+ * Bits corresponding to non-existent pins (beyond the number of implemented GPIO pins) are ignored.
+ * Bits set to 0 leave the corresponding pins unchanged.
+ *
+ * Example usage:
+ * ```c
+ * // Configure pin directions (simultaneously).
+ * // Pin 0 = input, pin 1 = output, pin 2 = output, pin 3 = output
+ * rvx_gpio_set_direction_mask(RVX_GPIO_ADDRESS, 0b1110);
+ *
+ * // Set pins 1 and 2 to logic 1 (high) simultaneously.
+ * // Pin 0 output latch is set to 1, but the pin state is not affected.
+ * // Pin 3 remains unchanged.
+ * rvx_gpio_set_high_mask(RVX_GPIO_ADDRESS, 0b0111);
+ * ```
+ *
+ * @param gpio_address Base address of the GPIO controller.
+ * @param bitmask 32-bit bitmask specifying which pins to set:
+ *                1 = set to logic 1 (high), 0 = leave unchanged.
+ */
+static inline void rvx_gpio_set_high_mask(RvxGpio *gpio_address, const uint32_t bitmask)
+{
+  gpio_address->RVX_GPIO_SET_REG = bitmask;
+}
+
+/**
+ * @brief Set a GPIO output pin to logic 0 (low).
+ *
+ * Drives the pin specified by `pin_index` to logic 0 (low) if it is configured as an output. If the pin
+ * is configured as an input, the output latch is updated without changing the pin state. The new
+ * value takes effect when the pin is later configured as an output.
+ *
+ * If `pin_index` refers to a non-existent pin (beyond the number of implemented GPIO pins), the
+ * operation is ignored without error.
+ *
+ * Example usage:
+ * ```c
+ * // Configure pin 0 as output.
+ * rvx_gpio_set_direction(RVX_GPIO_ADDRESS, 0, RVX_GPIO_OUTPUT);
+ *
+ * // Set pin 0 to logic 0 (low).
+ * rvx_gpio_set_low(RVX_GPIO_ADDRESS, 0);
+ * ```
+ *
+ * @param gpio_address Base address of the GPIO controller.
+ * @param pin_index Index of the GPIO pin to clear.
+ */
+static inline void rvx_gpio_set_low(RvxGpio *gpio_address, const uint8_t pin_index)
+{
+  gpio_address->RVX_GPIO_CLEAR_REG = 0x1U << pin_index;
+}
+
+/**
+ * @brief Set multiple GPIO output pins to logic 0 (low) simultaneously.
+ *
+ * Drives all GPIO pins corresponding to bits set to 1 in `bitmask` to logic 0 (low) if they are
+ * configured as outputs. Pins configured as inputs have their output latch updated without changing
+ * the pin state. The new value takes effect when the pin is later configured as an output.
+ *
+ * Bits corresponding to non-existent pins (beyond the number of implemented GPIO pins) are ignored.
+ * Bits set to 0 leave the corresponding pins unchanged.
+ *
+ * Example usage:
+ * ```c
+ * // Configure pin directions.
+ * // Pin 0 = input, pin 1 = output, pin 2 = output, pin 3 = output
+ * rvx_gpio_set_direction_mask(RVX_GPIO_ADDRESS, 0b1110);
+ *
+ * // Set pins 1 and 2 to logic 0 (low) simultaneously.
+ * // Pin 0 output latch is set to 0, but the pin state is not affected.
+ * // Pin 3 remains unchanged.
+ * rvx_gpio_set_low_mask(RVX_GPIO_ADDRESS, 0b0111);
+ * ```
+ *
+ * @param gpio_address Base address of the GPIO controller.
+ * @param bitmask 32-bit bitmask specifying which pins to clear:
+ *                1 = set to logic 0 (low), 0 = leave unchanged.
+ */
+static inline void rvx_gpio_set_low_mask(RvxGpio *gpio_address, const uint32_t bitmask)
+{
+  gpio_address->RVX_GPIO_CLEAR_REG = bitmask;
 }
 
 /**
@@ -548,133 +691,19 @@ static inline void rvx_gpio_pin_configure(RvxGpio *gpio_address, const uint8_t p
  * Example usage:
  * ```c *
  * // Configure pin 0 as input.
- * rvx_gpio_pin_configure(RVX_GPIO_ADDRESS, 0, RVX_GPIO_INPUT);
+ * rvx_gpio_set_direction(RVX_GPIO_ADDRESS, 0, RVX_GPIO_INPUT);
  *
  * // Read the state of pin 0.
- * bool pin0_value = rvx_gpio_pin_read(RVX_GPIO_ADDRESS, 0);
+ * bool pin0_value = rvx_gpio_read(RVX_GPIO_ADDRESS, 0);
  * ```
  *
  * @param gpio_address Base address of the GPIO controller.
  * @param pin_index Index of the GPIO pin to read.
  * @return The pin logic state as `bool` (`true` or `false`).
  */
-static inline bool rvx_gpio_pin_read(RvxGpio *gpio_address, const uint8_t pin_index)
+static inline bool rvx_gpio_read(RvxGpio *gpio_address, const uint8_t pin_index)
 {
   return RVX_READ_BIT(gpio_address->RVX_GPIO_READ_REG, pin_index);
-}
-
-/**
- * @brief Write a logic value to a GPIO output pin.
- *
- * If `value` is `true`, the pin is set to logic 1; if `false`, the pin is cleared to logic 0.
- * Writing to input pins updates their output latch but does not affect the pin state until the pin
- * is reconfigured as output.
- *
- * If `pin_index` refers to a non-existent pin (beyond the number of implemented GPIO pins), the
- * operation is ignored without error.
- *
- * Example usage:
- * ```c *
- * // Configure pins 0 and 1 as outputs.
- * rvx_gpio_pin_configure(RVX_GPIO_ADDRESS, 0, RVX_GPIO_OUTPUT);
- * rvx_gpio_pin_configure(RVX_GPIO_ADDRESS, 1, RVX_GPIO_OUTPUT);
- *
- * // Write logic 0 to pin 0 and 1 to pin 1.
- * rvx_gpio_pin_write(RVX_GPIO_ADDRESS, 0, false);
- * rvx_gpio_pin_write(RVX_GPIO_ADDRESS, 1, true);
- * ```
- *
- * @param gpio_address Base address of the GPIO controller.
- * @param pin_index Index of the GPIO pin to write.
- * @param value Desired logic value (`true` for logic 1 or `false` for logic 0).
- */
-static inline void rvx_gpio_pin_write(RvxGpio *gpio_address, const uint8_t pin_index, bool value)
-{
-  if (value)
-    gpio_address->RVX_GPIO_SET_REG = 0x1U << pin_index;
-  else
-    gpio_address->RVX_GPIO_CLEAR_REG = 0x1U << pin_index;
-}
-
-/**
- * @brief Clear a GPIO output pin to logic 0.
- *
- * Drives the pin specified by `pin_index` to logic 0 if it is configured as an output. If the pin
- * is configured as an input, the output latch is updated without changing the pin state. The new
- * value takes effect when the pin is later configured as an output.
- *
- * If `pin_index` refers to a non-existent pin (beyond the number of implemented GPIO pins), the
- * operation is ignored without error.
- *
- * Example usage:
- * ```c
- * // Configure pin 0 as output.
- * rvx_gpio_pin_configure(RVX_GPIO_ADDRESS, 0, RVX_GPIO_OUTPUT);
- *
- * // Write logic 0 to pin 0.
- * rvx_gpio_pin_clear(RVX_GPIO_ADDRESS, 0);
- * ```
- *
- * @param gpio_address Base address of the GPIO controller.
- * @param pin_index Index of the GPIO pin to clear.
- */
-static inline void rvx_gpio_pin_clear(RvxGpio *gpio_address, const uint8_t pin_index)
-{
-  gpio_address->RVX_GPIO_CLEAR_REG = 0x1U << pin_index;
-}
-
-/**
- * @brief Set a GPIO output pin to logic 1.
- *
- * Drives the pin specified by `pin_index` to logic 1 if it is configured as an output. If the pin
- * is configured as an input, the output latch is updated without changing the pin state. The new
- * value takes effect when the pin is later configured as an output.
- *
- * If `pin_index` refers to a non-existent pin (beyond the number of implemented GPIO pins), the
- * operation is ignored without error.
- *
- * Example usage:
- * ```c
- * // Configure pin 0 as output.
- * rvx_gpio_pin_configure(RVX_GPIO_ADDRESS, 0, RVX_GPIO_OUTPUT);
- *
- * // Write logic 1 to pin 0.
- * rvx_gpio_pin_set(RVX_GPIO_ADDRESS, 0);
- * ```
- *
- * @param gpio_address Base address of the GPIO controller.
- * @param pin_index Index of the GPIO pin to set.
- */
-static inline void rvx_gpio_pin_set(RvxGpio *gpio_address, const uint8_t pin_index)
-{
-  gpio_address->RVX_GPIO_SET_REG = 0x1U << pin_index;
-}
-
-/**
- * @brief Configure the direction of all GPIO pins simultaneously.
- *
- * Sets the direction of all GPIO pins according to `direction_mask`. Each bit set to 1 configures
- * the corresponding pin as an output, and each bit set to 0 configures it as an input. Pins are
- * updated simultaneously in a single register write.
- *
- * Only the lower bits of `direction_mask` corresponding to implemented GPIO pins are used. Any
- * upper bits beyond the number of available pins are ignored by the hardware.
- *
- * Example usage:
- * ```c *
- * // Configure pins 1 and 3 as outputs, pins 0 and 2 as inputs simultaneously.
- * rvx_gpio_configure_all(RVX_GPIO_ADDRESS, 0b1010);
- * ```
- *
- * @note To set the direction of a single pin, use `rvx_gpio_pin_configure()` instead.
- *
- * @param gpio_address Base address of the GPIO controller.
- * @param direction_mask 32-bit bitmask specifying the direction of each pin:
- *                       0 = input, 1 = output.
- */
-static inline void rvx_gpio_configure_all(RvxGpio *gpio_address, const uint32_t direction_mask)
-{
-  gpio_address->RVX_GPIO_OUTPUT_ENABLE_REG = direction_mask;
 }
 
 /**
@@ -705,10 +734,43 @@ static inline uint32_t rvx_gpio_read_all(RvxGpio *gpio_address)
 }
 
 /**
+ * @brief Write a logic value to a GPIO output pin.
+ *
+ * If `value` is `true`, the pin is set to logic 1 (high); if `false`, the pin is set to logic 0 (low).
+ * Writing to input pins updates their output latch but does not affect the pin state until the pin
+ * is reconfigured as output.
+ *
+ * If `pin_index` refers to a non-existent pin (beyond the number of implemented GPIO pins), the
+ * operation is ignored without error.
+ *
+ * Example usage:
+ * ```c *
+ * // Configure pins 0 and 1 as outputs.
+ * rvx_gpio_set_direction(RVX_GPIO_ADDRESS, 0, RVX_GPIO_OUTPUT);
+ * rvx_gpio_set_direction(RVX_GPIO_ADDRESS, 1, RVX_GPIO_OUTPUT);
+ *
+ * // Write logic 0 (low) to pin 0 and 1 (high) to pin 1.
+ * rvx_gpio_write(RVX_GPIO_ADDRESS, 0, false);
+ * rvx_gpio_write(RVX_GPIO_ADDRESS, 1, true);
+ * ```
+ *
+ * @param gpio_address Base address of the GPIO controller.
+ * @param pin_index Index of the GPIO pin to write.
+ * @param value Desired logic value (`true` for logic 1 or `false` for logic 0).
+ */
+static inline void rvx_gpio_write(RvxGpio *gpio_address, const uint8_t pin_index, bool value)
+{
+  if (value)
+    gpio_address->RVX_GPIO_SET_REG = 0x1U << pin_index;
+  else
+    gpio_address->RVX_GPIO_CLEAR_REG = 0x1U << pin_index;
+}
+
+/**
  * @brief Write logic values to all GPIO output pins simultaneously.
  *
- * Each bit set to 1 in `value_mask` sets the corresponding GPIO output pin to logic 1, and each
- * bit set to 0 sets the corresponding pin to logic 0, in a single operation. Writing to pins
+ * Each bit set to 1 in `value_mask` sets the corresponding GPIO output pin to logic 1 (high), and each
+ * bit set to 0 sets the corresponding pin to logic 0 (low), in a single operation. Writing to pins
  * configured as inputs updates their output latch but does not affect the actual pin state until
  * the pin is reconfigured as an output.
  *
@@ -719,83 +781,20 @@ static inline uint32_t rvx_gpio_read_all(RvxGpio *gpio_address)
  * ```c
  * // Configure pin directions.
  * // Pin 0 = input, pin 1 = output, pin 2 = output, pin 3 = output
- * rvx_gpio_configure_all(RVX_GPIO_ADDRESS, 0b1110);
+ * rvx_gpio_set_direction_mask(RVX_GPIO_ADDRESS, 0b1110);
  *
- * // Write values to pins 1, 2, and 3 simultaneously.
- * // Pin 1 = 0, Pin 2 = 1, Pin 3 = 0.
+ * // The output pins (1, 2 and 3) are updated simultaneously according to the value mask.
  * // Pin 0 (input) output latch is updated to 1, but pin state remains unaffected.
- * rvx_gpio_write_all(RVX_GPIO_ADDRESS, 0b0101);
+ * rvx_gpio_write_mask(RVX_GPIO_ADDRESS, 0b0101);
  * ```
  *
  * @param gpio_address Base address of the GPIO controller.
  * @param value_mask 32-bit bitmask specifying the logic values for the pins:
- *                   1 = set to logic 1, 0 = set to logic 0.
+ *                   1 = set to logic 1 (high), 0 = set to logic 0 (low).
  */
-static inline void rvx_gpio_write_all(RvxGpio *gpio_address, const uint32_t value_mask)
+static inline void rvx_gpio_write_mask(RvxGpio *gpio_address, const uint32_t value_mask)
 {
   gpio_address->RVX_GPIO_OUTPUT_REG = value_mask;
-}
-
-/**
- * @brief Clear multiple GPIO output pins to logic 0 simultaneously.
- *
- * Drives all GPIO pins corresponding to bits set to 1 in `bitmask` to logic 0 if they are
- * configured as outputs. Pins configured as inputs have their output latch updated without changing
- * the pin state. The new value takes effect when the pin is later configured as an output.
- *
- * Bits corresponding to non-existent pins (beyond the number of implemented GPIO pins) are ignored.
- * Bits set to 0 leave the corresponding pins unchanged.
- *
- * Example usage:
- * ```c
- * // Configure pin directions.
- * // Pin 0 = input, pin 1 = output, pin 2 = output, pin 3 = output
- * rvx_gpio_configure_all(RVX_GPIO_ADDRESS, 0b1110);
- *
- * // Set pins 1 and 2 to logic 0 simultaneously.
- * // Pin 0 output latch is cleared to 0, but the pin state is not affected.
- * // Pin 3 remains unchanged.
- * rvx_gpio_multi_pin_clear(RVX_GPIO_ADDRESS, 0b0111);
- * ```
- *
- * @param gpio_address Base address of the GPIO controller.
- * @param bitmask 32-bit bitmask specifying which pins to clear:
- *                1 = clear to logic 0, 0 = leave unchanged.
- */
-static inline void rvx_gpio_multi_pin_clear(RvxGpio *gpio_address, const uint32_t bitmask)
-{
-  gpio_address->RVX_GPIO_CLEAR_REG = bitmask;
-}
-
-/**
- * @brief Set multiple GPIO output pins to logic 1 simultaneously.
- *
- * Drives all GPIO pins corresponding to bits set to 1 in `bitmask` to logic 1 if they are
- * configured as outputs. Pins configured as inputs have their output latch updated without changing
- * the pin state. The new value takes effect when the pin is later configured as an output.
- *
- * Bits corresponding to non-existent pins (beyond the number of implemented GPIO pins) are ignored.
- * Bits set to 0 leave the corresponding pins unchanged.
- *
- * Example usage:
- * ```c
- * // Configure pin directions.
- * // Pin 0 = input, pin 1 = output, pin 2 = output, pin 3 = output
- * rvx_gpio_configure_all(RVX_GPIO_ADDRESS, 0b1110);
- *
- * // Set pins 1 and 2 to logic 1 simultaneously.
- * // Pin 0 output latch is set to 1, but the pin state is not affected.
- * // Pin 3 remains unchanged.
- * rvx_gpio_multi_pin_set(RVX_GPIO_ADDRESS, 0b0111);
- * ```
- *
- * @param gpio_address Base address of the GPIO controller.
- * @param bitmask 32-bit bitmask specifying which pins to set:
- *                1 = set to logic 1, 0 = leave unchanged.
- */
-static inline void rvx_gpio_multi_pin_set(RvxGpio *gpio_address, const uint32_t bitmask)
-{
-  gpio_address->RVX_GPIO_SET_REG = bitmask;
 }
 
 /**
