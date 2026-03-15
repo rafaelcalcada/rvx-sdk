@@ -1447,4 +1447,16 @@ static inline void rvx_uart_init(RvxUart *uart_address, uint32_t baud_rate, uint
   uart_address->RVX_UART_BAUD_REG = clock_frequency_in_hz / baud_rate;
 }
 
+/**
+ * @brief Busy-wait indefinitely until an interrupt occurs.
+ *
+ * This function executes an infinite loop that can only be exited by an interrupt. It is typically
+ * used in the main loop of a program that relies on interrupts for event handling, allowing the CPU
+ * to remain idle until an interrupt is received.
+ */
+static inline void rvx_wait_for_interrupt()
+{
+  __asm__ volatile("j .");
+}
+
 #endif // RVX_HAL_H
