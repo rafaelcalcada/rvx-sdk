@@ -519,7 +519,7 @@ static inline void rvx_irq_enable_direct_mode(void)
  * rvx_gpio_pin_configure(RVX_GPIO_ADDRESS, 1, RVX_GPIO_INPUT);
  * ```
  *
- * @param gpio_address Pointer to the base address of the GPIO peripheral.
+ * @param gpio_address Base address of the GPIO controller.
  * @param pin_index Index of the GPIO pin to configure as input or output.
  * @param direction Desired pin direction as `RvxGpioPinDirection` (`RVX_GPIO_INPUT` or
  * `RVX_GPIO_OUTPUT`).
@@ -554,7 +554,7 @@ static inline void rvx_gpio_pin_configure(RvxGpio *gpio_address, const uint8_t p
  * bool pin0_value = rvx_gpio_pin_read(RVX_GPIO_ADDRESS, 0);
  * ```
  *
- * @param gpio_address Pointer to the base address of the GPIO peripheral.
+ * @param gpio_address Base address of the GPIO controller.
  * @param pin_index Index of the GPIO pin to read.
  * @return The pin logic state as `bool` (`true` or `false`).
  */
@@ -584,7 +584,7 @@ static inline bool rvx_gpio_pin_read(RvxGpio *gpio_address, const uint8_t pin_in
  * rvx_gpio_pin_write(RVX_GPIO_ADDRESS, 1, true);
  * ```
  *
- * @param gpio_address Pointer to the base address of the GPIO peripheral.
+ * @param gpio_address Base address of the GPIO controller.
  * @param pin_index Index of the GPIO pin to write.
  * @param value Desired logic value (`true` for logic 1 or `false` for logic 0).
  */
@@ -615,7 +615,7 @@ static inline void rvx_gpio_pin_write(RvxGpio *gpio_address, const uint8_t pin_i
  * rvx_gpio_pin_clear(RVX_GPIO_ADDRESS, 0);
  * ```
  *
- * @param gpio_address Pointer to the base address of the GPIO peripheral.
+ * @param gpio_address Base address of the GPIO controller.
  * @param pin_index Index of the GPIO pin to clear.
  */
 static inline void rvx_gpio_pin_clear(RvxGpio *gpio_address, const uint8_t pin_index)
@@ -642,7 +642,7 @@ static inline void rvx_gpio_pin_clear(RvxGpio *gpio_address, const uint8_t pin_i
  * rvx_gpio_pin_set(RVX_GPIO_ADDRESS, 0);
  * ```
  *
- * @param gpio_address Pointer to the base address of the GPIO peripheral.
+ * @param gpio_address Base address of the GPIO controller.
  * @param pin_index Index of the GPIO pin to set.
  */
 static inline void rvx_gpio_pin_set(RvxGpio *gpio_address, const uint8_t pin_index)
@@ -668,7 +668,7 @@ static inline void rvx_gpio_pin_set(RvxGpio *gpio_address, const uint8_t pin_ind
  *
  * @note To set the direction of a single pin, use `rvx_gpio_pin_configure()` instead.
  *
- * @param gpio_address Pointer to the base address of the GPIO peripheral.
+ * @param gpio_address Base address of the GPIO controller.
  * @param direction_mask 32-bit bitmask specifying the direction of each pin:
  *                       0 = input, 1 = output.
  */
@@ -695,7 +695,7 @@ static inline void rvx_gpio_configure_all(RvxGpio *gpio_address, const uint32_t 
  * bool pin3_value = (pin_values >> 3) & 1;
  * ```
  *
- * @param gpio_address Pointer to the base address of the GPIO peripheral.
+ * @param gpio_address Base address of the GPIO controller.
  * @return 32-bit value representing the logic states of all GPIO pins.
  *         Only lower bits corresponding to implemented pins are valid; higher bits are zero-padded.
  */
@@ -727,7 +727,7 @@ static inline uint32_t rvx_gpio_read_all(RvxGpio *gpio_address)
  * rvx_gpio_write_all(RVX_GPIO_ADDRESS, 0b0101);
  * ```
  *
- * @param gpio_address Pointer to the base address of the GPIO peripheral.
+ * @param gpio_address Base address of the GPIO controller.
  * @param value_mask 32-bit bitmask specifying the logic values for the pins:
  *                   1 = set to logic 1, 0 = set to logic 0.
  */
@@ -758,7 +758,7 @@ static inline void rvx_gpio_write_all(RvxGpio *gpio_address, const uint32_t valu
  * rvx_gpio_multi_pin_clear(RVX_GPIO_ADDRESS, 0b0111);
  * ```
  *
- * @param gpio_address Pointer to the base address of the GPIO peripheral.
+ * @param gpio_address Base address of the GPIO controller.
  * @param bitmask 32-bit bitmask specifying which pins to clear:
  *                1 = clear to logic 0, 0 = leave unchanged.
  */
@@ -789,7 +789,7 @@ static inline void rvx_gpio_multi_pin_clear(RvxGpio *gpio_address, const uint32_
  * rvx_gpio_multi_pin_set(RVX_GPIO_ADDRESS, 0b0111);
  * ```
  *
- * @param gpio_address Pointer to the base address of the GPIO peripheral.
+ * @param gpio_address Base address of the GPIO controller.
  * @param bitmask 32-bit bitmask specifying which pins to set:
  *                1 = set to logic 1, 0 = leave unchanged.
  */
@@ -818,7 +818,7 @@ static inline void rvx_gpio_multi_pin_set(RvxGpio *gpio_address, const uint32_t 
  *
  * - `prescale = 65534` → slowest clock: `f_SCL = f_clock / 262140`
  *
- * @param i2c_address Pointer to the base address of the I2C.
+ * @param i2c_address Base address of the I2C controller.
  * @param prescale value (0–65534) that determines the SCL output frequency.
  */
 static inline void rvx_i2c_prescale_set(RvxI2c *i2c_address, const uint16_t prescale)
@@ -831,7 +831,7 @@ static inline void rvx_i2c_prescale_set(RvxI2c *i2c_address, const uint16_t pres
  *
  * This function returns the byte received by the I2C.
  *
- * @param i2c_address Pointer to the base address of the I2C peripheral.
+ * @param i2c_address Base address of the I2C controller.
  * @return The received byte.
  */
 static inline uint8_t rvx_i2c_get_data(RvxI2c *i2c_address)
@@ -842,7 +842,7 @@ static inline uint8_t rvx_i2c_get_data(RvxI2c *i2c_address)
 /**
  * @brief Check if the I2C is busy.
  *
- * @param i2c_address Pointer to the base address of the I2C peripheral.
+ * @param i2c_address Base address of the I2C controller.
  * @return `true` if the I2C is busy, `false` otherwise.
  */
 static inline bool rvx_i2c_is_busy(RvxI2c *i2c_address)
@@ -856,7 +856,7 @@ static inline bool rvx_i2c_is_busy(RvxI2c *i2c_address)
  * This function continuously checks the I2C status register and returns only when the I2C is ready to
  * send new run.
  *
- * @param i2c_address Pointer to the base address of the I2C peripheral.
+ * @param i2c_address Base address of the I2C controller.
  */
 static inline void rvx_i2c_wait(RvxI2c *i2c_address)
 {
@@ -867,7 +867,7 @@ static inline void rvx_i2c_wait(RvxI2c *i2c_address)
 /**
  * @brief Check if the I2C received "no acknowledge".
  *
- * @param i2c_address Pointer to the base address of the I2C peripheral.
+ * @param i2c_address Base address of the I2C controller.
  * @return `true` if the I2C is received "no acknowledge", `false` otherwise.
  */
 static inline bool rvx_i2c_is_no_acknowledge(RvxI2c *i2c_address)
@@ -878,7 +878,7 @@ static inline bool rvx_i2c_is_no_acknowledge(RvxI2c *i2c_address)
 /**
  * @brief Check if there is an interrupt request on the I2C interface.
  *
- * @param i2c_address Pointer to the base address of the I2C peripheral.
+ * @param i2c_address Base address of the I2C controller.
  * @return `true` if the I2C has an interrupt request, `false` otherwise.
  */
 static inline bool rvx_i2c_is_irq(RvxI2c *i2c_address)
@@ -889,7 +889,7 @@ static inline bool rvx_i2c_is_irq(RvxI2c *i2c_address)
 /**
  * @brief Clear an interrupt request on the I2C interface.
  *
- * @param i2c_address Pointer to the base address of the I2C peripheral.
+ * @param i2c_address Base address of the I2C controller.
  */
 static inline void rvx_i2c_clear_irq(RvxI2c *i2c_address)
 {
@@ -899,7 +899,7 @@ static inline void rvx_i2c_clear_irq(RvxI2c *i2c_address)
 /**
  * @brief Run encode start condition on I2C interface.
  *
- * @param i2c_address Pointer to the base address of the I2C peripheral.
+ * @param i2c_address Base address of the I2C controller.
  */
 static inline void rvx_i2c_run_start(RvxI2c *i2c_address)
 {
@@ -911,7 +911,7 @@ static inline void rvx_i2c_run_start(RvxI2c *i2c_address)
 /**
  * @brief Run encode restart condition on I2C interface.
  *
- * @param i2c_address Pointer to the base address of the I2C peripheral.
+ * @param i2c_address Base address of the I2C controller.
  */
 static inline void rvx_i2c_run_restart(RvxI2c *i2c_address)
 {
@@ -923,7 +923,7 @@ static inline void rvx_i2c_run_restart(RvxI2c *i2c_address)
 /**
  * @brief Run encode stop condition on I2C interface.
  *
- * @param i2c_address Pointer to the base address of the I2C peripheral.
+ * @param i2c_address Base address of the I2C controller.
  */
 static inline void rvx_i2c_run_stop(RvxI2c *i2c_address)
 {
@@ -935,7 +935,7 @@ static inline void rvx_i2c_run_stop(RvxI2c *i2c_address)
 /**
  * @brief Run write data on I2C interface.
  *
- * @param i2c_address Pointer to the base address of the I2C peripheral.
+ * @param i2c_address Base address of the I2C controller.
  * @param data The byte to write (`uint8_t`).
  * @param is_acknowledge (`true` for set acknowledge or `false` for set no acknowledge).
  */
@@ -957,7 +957,7 @@ static inline void rvx_i2c_run_write(RvxI2c *i2c_address, const uint8_t data, co
 /**
  * @brief Run read data I2C interface with acknowledge or no acknowledge.
  *
- * @param i2c_address Pointer to the base address of the I2C peripheral.
+ * @param i2c_address Base address of the I2C controller.
  * @param is_acknowledge (`true` for set acknowledge or `false` for set no acknowledge).
  */
 static inline void rvx_i2c_run_read(RvxI2c *i2c_address, const bool is_no_acknowledge)
@@ -968,7 +968,7 @@ static inline void rvx_i2c_run_read(RvxI2c *i2c_address, const bool is_no_acknow
 /**
  * @brief Write data to a slave device on the I2C.
  *
- * @param i2c_address Pointer to the base address of the I2C peripheral.
+ * @param i2c_address Base address of the I2C controller.
  * @param slave_address I2C Slave address (uint8_t).
  * @param buffer Pointer to the source buffer (uint8_t *).
  * @param size The size of data in the buffer (size_t).
@@ -996,7 +996,7 @@ static inline bool rvx_i2c_write_to(RvxI2c *i2c_address, const uint8_t slave_add
 /**
  * @brief Read data from a slave device on the I2C.
  *
- * @param i2c_address Pointer to the base address of the I2C peripheral.
+ * @param i2c_address Base address of the I2C controller.
  * @param slave_address I2C Slave address (uint8_t).
  * @param buffer Pointer to the destination buffer (uint8_t *).
  * @param size The size of data in the buffer (size_t).
@@ -1031,7 +1031,7 @@ static inline bool rvx_i2c_reade_from(RvxI2c *i2c_address, const uint8_t slave_a
  *
  *   - RVX_SPI_MODE_3 (CPOL 1, CPHA 1).
  *
- * @param spi_address Pointer to the base address of the SPI controller.
+ * @param spi_address Base address of the SPI controller.
  * @param mode Desired mode as `RvxSpiMode`.
  */
 static inline void rvx_spi_mode_set(RvxSpi *spi_address, RvxSpiMode mode)
@@ -1042,7 +1042,7 @@ static inline void rvx_spi_mode_set(RvxSpi *spi_address, RvxSpiMode mode)
 /**
  * @brief Read the current SPI controller mode.
  *
- * @param spi_address Pointer to the base address of the SPI controller.
+ * @param spi_address Base address of the SPI controller.
  * @return The SPI controller mode as `RvxSpiMode`.
  */
 static inline RvxSpiMode rvx_spi_mode_get(RvxSpi *spi_address)
@@ -1057,7 +1057,7 @@ static inline RvxSpiMode rvx_spi_mode_get(RvxSpi *spi_address)
  * To communicate with multiple SPI devices on the same bus, use additional GPIO pins
  * as software-controlled CS lines.
  *
- * @param spi_address Pointer to the base address of the SPI controller.
+ * @param spi_address Base address of the SPI controller.
  */
 static inline void rvx_spi_chip_select_assert(RvxSpi *spi_address)
 {
@@ -1071,7 +1071,7 @@ static inline void rvx_spi_chip_select_assert(RvxSpi *spi_address)
  * To communicate with multiple SPI devices on the same bus, use additional GPIO pins
  * as software-controlled CS lines.
  *
- * @param spi_address Pointer to the base address of the SPI controller.
+ * @param spi_address Base address of the SPI controller.
  */
 static inline void rvx_spi_chip_select_deassert(RvxSpi *spi_address)
 {
@@ -1098,7 +1098,7 @@ static inline void rvx_spi_chip_select_deassert(RvxSpi *spi_address)
  *
  * - `divider = 255` → slowest clock: `f_SCLK = f_clock / 512`
  *
- * @param spi_address Pointer to the base address of the SPI controller.
+ * @param spi_address Base address of the SPI controller.
  * @param divider Clock divider value (0–255) that determines the SCLK output frequency.
  */
 static inline void rvx_spi_clock_set_divider(RvxSpi *spi_address, const uint8_t divider)
@@ -1114,7 +1114,7 @@ static inline void rvx_spi_clock_set_divider(RvxSpi *spi_address, const uint8_t 
  *
  *     `f_SCLK = f_clock / [2 * (divider + 1)]`
  *
- * @param spi_address Pointer to the base address of the SPI controller.
+ * @param spi_address Base address of the SPI controller.
  * @return The current divider configuration value.
  */
 static inline uint8_t rvx_spi_clock_get_divider(RvxSpi *spi_address)
@@ -1123,12 +1123,12 @@ static inline uint8_t rvx_spi_clock_get_divider(RvxSpi *spi_address)
 }
 
 /**
- * @brief Write a byte to the SPI peripheral.
+ * @brief Write a byte to the SPI controller.
  *
  * Sends a byte to the SPI device selected by the active CS line and blocks until the transfer
- * completes. The data received from the SPI peripheral during the transfer is ignored.
+ * completes. The data received from the SPI controller during the transfer is ignored.
  *
- * @param spi_address Pointer to the base address of the SPI controller.
+ * @param spi_address Base address of the SPI controller.
  * @param wdata Byte to be transmitted.
  */
 static inline void rvx_spi_write(RvxSpi *spi_address, const uint8_t wdata)
@@ -1141,12 +1141,12 @@ static inline void rvx_spi_write(RvxSpi *spi_address, const uint8_t wdata)
 /**
  * @brief Send a byte over SPI and receive a byte simultaneously.
  *
- * Transmits a byte to the SPI peripheral selected by the active CS line and blocks until the
- * transfer completes. Returns the byte received from the SPI peripheral during the transfer.
+ * Transmits a byte to the SPI controller selected by the active CS line and blocks until the
+ * transfer completes. Returns the byte received from the SPI controller during the transfer.
  *
- * @param spi_address Pointer to the base address of the SPI controller.
+ * @param spi_address Base address of the SPI controller.
  * @param wdata Byte to be transmitted.
- * @return Byte received from the selected SPI Peripheral during the transfer.
+ * @return Byte received from the selected SPI controller during the transfer.
  */
 static inline uint8_t rvx_spi_transfer(RvxSpi *spi_address, const uint8_t wdata)
 {
@@ -1162,7 +1162,7 @@ static inline uint8_t rvx_spi_transfer(RvxSpi *spi_address, const uint8_t wdata)
  *
  * @note If the timer is already enabled, calling this function has no effect.
  *
- * @param timer_address Pointer to the base address of the Timer peripheral.
+ * @param timer_address Base address of the Timer module.
  */
 static inline void rvx_timer_enable(RvxTimer *timer_address)
 {
@@ -1175,7 +1175,7 @@ static inline void rvx_timer_enable(RvxTimer *timer_address)
  *
  * @note If the timer is already disabled, calling this function has no effect.
  *
- * @param timer_address Pointer to the base address of the Timer peripheral.
+ * @param timer_address Base address of the Timer module.
  */
 static inline void rvx_timer_disable(RvxTimer *timer_address)
 {
@@ -1185,7 +1185,7 @@ static inline void rvx_timer_disable(RvxTimer *timer_address)
 /**
  * @brief Check if the timer counter is enabled.
  *
- * @param timer_address Pointer to the base address of the Timer peripheral.
+ * @param timer_address Base address of the Timer module.
  * @return true if the timer is enabled, false otherwise.
  */
 static inline bool rvx_timer_is_enabled(RvxTimer *timer_address)
@@ -1197,7 +1197,7 @@ static inline bool rvx_timer_is_enabled(RvxTimer *timer_address)
  * @brief Set a new value for the timer counter. The value can be updated whether counting is
  * enabled or disabled.
  *
- * @param timer_address Pointer to the base address of the Timer peripheral.
+ * @param timer_address Base address of the Timer module.
  * @param new_value 64-bit value to assign to the timer counter.
  */
 static inline void rvx_timer_set_counter(RvxTimer *timer_address, uint64_t new_value)
@@ -1210,7 +1210,7 @@ static inline void rvx_timer_set_counter(RvxTimer *timer_address, uint64_t new_v
 /**
  * @brief Read the current value of the timer counter.
  *
- * @param timer_address Pointer to the base address of the Timer peripheral.
+ * @param timer_address Base address of the Timer module.
  * @return 64-bit value representing the current timer count.
  */
 static inline uint64_t rvx_timer_get_counter(RvxTimer *timer_address)
@@ -1230,7 +1230,7 @@ static inline uint64_t rvx_timer_get_counter(RvxTimer *timer_address)
  *
  * The counter is set to zero regardless of whether counting is enabled or disabled.
  *
- * @param timer_address Pointer to the base address of the Timer peripheral.
+ * @param timer_address Base address of the Timer module.
  */
 static inline void rvx_timer_clear_counter(RvxTimer *timer_address)
 {
@@ -1254,7 +1254,7 @@ static inline void rvx_timer_clear_counter(RvxTimer *timer_address)
  *
  * 3. Write the desired lower 32-bit value.
  *
- * @param timer_address Pointer to the base address of the Timer peripheral.
+ * @param timer_address Base address of the Timer module.
  * @param new_value 64-bit value to assign to the compare register.
  */
 static inline void rvx_timer_set_compare(RvxTimer *timer_address, uint64_t new_value)
@@ -1267,7 +1267,7 @@ static inline void rvx_timer_set_compare(RvxTimer *timer_address, uint64_t new_v
 /**
  * @brief Get the current value of the 64-bit timer compare register.
  *
- * @param timer_address Pointer to the base address of the Timer peripheral.
+ * @param timer_address Base address of the Timer module.
  * @return uint64_t The current value of the compare register.
  */
 static inline uint64_t rvx_timer_get_compare(RvxTimer *timer_address)
@@ -1278,7 +1278,7 @@ static inline uint64_t rvx_timer_get_compare(RvxTimer *timer_address)
 /**
  * @brief Clear the timer interrupt by setting the compare register to its maximum value.
  *
- * @param timer_address Pointer to the base address of the Timer peripheral.
+ * @param timer_address Base address of the Timer module.
  */
 static inline void rvx_timer_clear_interrupt(RvxTimer *timer_address)
 {
@@ -1293,7 +1293,7 @@ static inline void rvx_timer_clear_interrupt(RvxTimer *timer_address)
  * functions (e.g., `rvx_uart_write`, `rvx_uart_write_string`) automatically wait until the UART is
  * ready to transmit.
  *
- * @param uart_address Pointer to the base address of the UART peripheral.
+ * @param uart_address Base address of the UART controller.
  * @return `true` if the UART is ready to send data, `false` otherwise.
  */
 static inline bool rvx_uart_tx_ready(RvxUart *uart_address)
@@ -1317,7 +1317,7 @@ static inline bool rvx_uart_tx_ready(RvxUart *uart_address)
  * rvx_uart_wait_tx_complete(RVX_UART_ADDRESS);
  * ```
  *
- * @param uart_address Pointer to the base address of the UART peripheral.
+ * @param uart_address Base address of the UART controller.
  */
 static inline void rvx_uart_wait_tx_complete(RvxUart *uart_address)
 {
@@ -1340,7 +1340,7 @@ static inline void rvx_uart_wait_tx_complete(RvxUart *uart_address)
  * uint8_t rx_data = rvx_uart_read(RVX_UART_ADDRESS);
  * ```
  *
- * @param uart_address Pointer to the base address of the UART peripheral.
+ * @param uart_address Base address of the UART controller.
  * @return `true` if new data is available, `false` if no new data has been received
  */
 static inline bool rvx_uart_rx_ready(RvxUart *uart_address)
@@ -1365,7 +1365,7 @@ static inline bool rvx_uart_rx_ready(RvxUart *uart_address)
  * uint8_t rx_data = rvx_uart_read(RVX_UART_ADDRESS);
  * ```
  *
- * @param uart_address Pointer to the base address of the UART peripheral.
+ * @param uart_address Base address of the UART controller.
  * @return The last received byte, or `0x00` if no data has been received since power-on or reset.
  */
 static inline uint8_t rvx_uart_read(RvxUart *uart_address)
@@ -1390,7 +1390,7 @@ static inline uint8_t rvx_uart_read(RvxUart *uart_address)
  * rvx_uart_write(RVX_UART_ADDRESS, 'B');
  * ```
  *
- * @param uart_address Pointer to the base address of the UART peripheral.
+ * @param uart_address Base address of the UART controller.
  * @param data The byte to write (`uint8_t`).
  */
 static inline void rvx_uart_write(RvxUart *uart_address, uint8_t data)
@@ -1411,7 +1411,7 @@ static inline void rvx_uart_write(RvxUart *uart_address, uint8_t data)
  * rvx_uart_write_string(RVX_UART_ADDRESS, "Hello, World!");
  * ```
  *
- * @param uart_address Pointer to the base address of the UART peripheral.
+ * @param uart_address Base address of the UART controller.
  * @param c_str Pointer to the null-terminated C string to transmit.
  */
 static inline void rvx_uart_write_string(RvxUart *uart_address, const char *c_str)
@@ -1438,7 +1438,7 @@ static inline void rvx_uart_write_string(RvxUart *uart_address, const char *c_st
  * rvx_uart_init(RVX_UART_ADDRESS, 115200, 50000000);
  * ```
  *
- * @param uart_address Pointer to the base address of the UART peripheral.
+ * @param uart_address Base address of the UART controller.
  * @param baud_rate The desired baud rate
  * @param clock_frequency_in_hz The frequency of RVX top module clock pin, in Hz
  */
