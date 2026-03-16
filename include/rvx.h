@@ -124,6 +124,13 @@
 #define RVX_IRQ_FAST_BITMASK(n) (1U << (16U + (n))) ///< Bitmask for the Fast Interrupt `n` enable/pending bit.
 /// @}
 
+/// @name Bit masks for I2C Status register.
+/// @{
+#define RVX_I2C_STATUS_RUN_BITMASK (1U << 0U)           ///< Bitmask for the I2C: Status register run bit.
+#define RVX_I2C_STATUS_NOACKNOWLEDGE_BITMASK (1U << 1U) ///< Bitmask for the I2C: Status register no acknowledge bit.
+#define RVX_I2C_STATUS_IRQ_BITMASK (1U << 2U)           ///< Bitmask for the I2C: Status register IRQ bit.
+/// @}
+
 /// @brief Standard RISC-V trap cause codes for the MCAUSE CSR.
 typedef enum RvxTrapCauseCode
 {
@@ -180,13 +187,6 @@ typedef enum RvxI2cCommand
   RVX_I2C_COMMAND_STOP = 2,    ///< I2C Command stop.
   RVX_I2C_COMMAND_DATA = 3     ///< I2C Command data.
 } RvxI2cCommand;
-
-/// @name Bit masks for I2C Status register.
-/// @{
-#define RVX_I2C_STATUS_RUN_BITMASK (1U << 0U)           ///< Bitmask for the I2C: Status register run bit.
-#define RVX_I2C_STATUS_NOACKNOWLEDGE_BITMASK (1U << 1U) ///< Bitmask for the I2C: Status register no acknowledge bit.
-#define RVX_I2C_STATUS_IRQ_BITMASK (1U << 2U)           ///< Bitmask for the I2C: Status register IRQ bit.
-/// @}
 
 /// The SPI mode configuration.
 typedef enum RvxSpiMode
