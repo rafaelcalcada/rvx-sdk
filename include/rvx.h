@@ -118,9 +118,9 @@
 
 /// @name Bit masks for MIE and MIP interrupt enable/pending bits.
 /// @{
-#define RVX_IRQ_SOFTWARE_BITMASK (1U << 3U)         ///< Bitmask for the Machine Software Interrupt enable/pending bit.
-#define RVX_IRQ_TIMER_BITMASK (1U << 7U)            ///< Bitmask for the Machine Timer Interrupt enable/pending bit.
-#define RVX_IRQ_EXTERNAL_BITMASK (1U << 11U)        ///< Bitmask for the Machine External Interrupt enable/pending bit.
+#define RVX_IRQ_SOFTWARE_BITMASK (1U << 3U)         ///< Bitmask for the Software Interrupt enable/pending bit.
+#define RVX_IRQ_TIMER_BITMASK (1U << 7U)            ///< Bitmask for the Timer Interrupt enable/pending bit.
+#define RVX_IRQ_EXTERNAL_BITMASK (1U << 11U)        ///< Bitmask for the External Interrupt enable/pending bit.
 #define RVX_IRQ_FAST_BITMASK(n) (1U << (16U + (n))) ///< Bitmask for the Fast Interrupt `n` enable/pending bit.
 /// @}
 
@@ -130,6 +130,21 @@
 #define RVX_I2C_STATUS_NOACKNOWLEDGE_BITMASK (1U << 1U) ///< Bitmask for the I2C: Status register no acknowledge bit.
 #define RVX_I2C_STATUS_IRQ_BITMASK (1U << 2U)           ///< Bitmask for the I2C: Status register IRQ bit.
 /// @}
+
+/// @brief Privilege levels in the RISC-V architecture.
+typedef enum RvxPrivilegeLevel
+{
+  RVX_PRIVILEGE_LEVEL_U = 0, ///< User mode privilege level.
+  RVX_PRIVILEGE_LEVEL_S = 1, ///< Supervisor mode privilege level.
+  RVX_PRIVILEGE_LEVEL_M = 3  ///< Machine mode privilege level.
+} RvxPrivilegeLevel;
+
+/// @brief Interrupt modes in the RISC-V architecture.
+typedef enum RvxInterruptMode
+{
+  RVX_INTERRUPT_MODE_DIRECT = 0,   ///< Direct interrupt mode.
+  RVX_INTERRUPT_MODE_VECTORED = 1, ///< Vectored interrupt mode.
+} RvxInterruptMode;
 
 /// @brief Standard RISC-V trap cause codes for the MCAUSE CSR.
 typedef enum RvxTrapCauseCode
@@ -383,126 +398,148 @@ typedef struct RVX_ALIGNED RvxUart
   asm volatile("csrrc %0, %1, %2" : "=r"(csr_old_value) : "i"(csr_address), "r"(bit_mask));
 
 /**
- * @brief Enable specific machine-level interrupts by setting bits in the MIE CSR.
+ * @brief Enable a specific interrupt by setting the corresponding bit in the appropriate interrupt enable CSR.
  *
- * This function sets the bits specified in `bit_mask` in the MIE CSR, enabling those interrupt
- * sources. Previously enabled interrupts remain unaffected.
+ * The `privilege_level` parameter specifies the privilege level at which to enable the interrupt(s). For RVX, only
+ * machine-level interrupts are implemented, so `privilege_level` must be set to `RVX_PRIVILEGE_LEVEL_M`. If a different
+ * privilege level is specified, no action is taken and no error is reported.
  *
- * @note An interrupt is only effectively enabled if the global MIE bit in MSTATUS is also set.
+ * The `bitmask` parameter can be a combination of the following values, depending on which interrupts you want to
+ * enable:
+ *
+ * - `RVX_IRQ_SOFTWARE_BITMASK`: Enable software interrupts.
+ *
+ * - `RVX_IRQ_TIMER_BITMASK`: Enable timer interrupts.
+ *
+ * - `RVX_IRQ_EXTERNAL_BITMASK`: Enable external interrupts.
+ *
+ * - `RVX_IRQ_FAST_BITMASK(n)`: Enable the fast interrupt with index `n`
  *
  * Example usage:
  * ```c
- * // Enable Machine Timer and Machine External interrupts
- * rvx_irq_enable(RVX_IRQ_TIMER_BITMASK | RVX_IRQ_EXTERNAL_BITMASK);
- *
- * // Enable RVX Fast Interrupt 2
- * rvx_irq_enable(RVX_IRQ_FAST_BITMASK(2));
- *
- * // Globally enable interrupts to make the above effective
- * rvx_irq_enable_global();
+ * // Enable timer interrupt and fast interrupt 0 in M-mode
+ * rvx_irq_enable(RVX_PRIVILEGE_LEVEL_M, RVX_IRQ_TIMER_BITMASK | RVX_IRQ_FAST_BITMASK(0));
  * ```
  *
- * @param bit_mask Bitmask of interrupts to enable in the MIE CSR.
+ * @note An interrupt will only cause a trap if the global interrupt enable bit for the corresponding privilege level is
+ * also set in the Status CSR. This function does not modify the global interrupt enable bit. You must call
+ * `rvx_irq_enable_global()` to globally enable interrupts at the desired privilege level.
+ *
+ * @param privilege_level The privilege level at which to enable the interrupt(s).
+ * @param bitmask Bit mask indicating which interrupt(s) to enable.
  */
-static inline void rvx_irq_enable(uint32_t bit_mask)
+static inline void rvx_irq_enable(RvxPrivilegeLevel privilege_level, uint32_t bitmask)
 {
-  RVX_CSR_SET(RVX_CSR_MIE_ADDR, bit_mask);
+  if (privilege_level == RVX_PRIVILEGE_LEVEL_M)
+    RVX_CSR_SET(RVX_CSR_MIE_ADDR, bitmask);
 }
 
 /**
- * @brief Globally enable machine-level interrupts by setting the MIE bit in MSTATUS.
+ * @brief Globally enable interrupts at the specified privilege level by setting the appropriate global interrupt enable
+ * bit in the Status CSR.
  *
- * This function sets the global Machine Interrupt Enable (MIE) bit in the Machine Status
- * (MSTATUS) CSR.
+ * The `privilege_level` parameter specifies the privilege level at which to globally enable interrupts. For RVX, only
+ * machine-level interrupts are implemented, so `privilege_level` must be set to `RVX_PRIVILEGE_LEVEL_M`. If a different
+ * privilege level is specified, no action is taken and no error is reported.
  *
- * @note Interrupts will only trigger traps if they are also enabled in the MIE CSR.
+ * @note A given interrupt will only cause a trap if its specific enable bit is set in the appropriate interrupt enable
+ * CSR. You can call `rvx_irq_enable()` to do this.
  *
- * Example usage:
- * ```c
- * // Globally enable interrupts
- * rvx_irq_enable_global();
- * ```
+ * @param privilege_level The privilege level at which to globally enable interrupts.
  */
-static inline void rvx_irq_enable_global(void)
+static inline void rvx_irq_enable_global(RvxPrivilegeLevel privilege_level)
 {
-  RVX_CSR_SET(RVX_CSR_MSTATUSL_ADDR, RVX_CSR_MSTATUSL_MIE_BITMASK);
+  if (privilege_level == RVX_PRIVILEGE_LEVEL_M)
+    RVX_CSR_SET(RVX_CSR_MSTATUSL_ADDR, RVX_CSR_MSTATUSL_MIE_BITMASK);
 }
 
 /**
- * @brief Disable specific machine-level interrupts by clearing bits in the MIE CSR.
+ * @brief Disable a specific interrupt by clearing the corresponding bit in the appropriate interrupt enable CSR.
  *
- * This function clears the bits specified in `bit_mask` in the MIE CSR. The selected
- * interrupts will no longer trigger traps, even if the global MIE bit in MSTATUS is set.
+ * The `privilege_level` parameter specifies the privilege level at which to disable the interrupt(s). For RVX, only
+ * machine-level interrupts are implemented, so `privilege_level` must be set to `RVX_PRIVILEGE_LEVEL_M`. If a different
+ * privilege level is specified, no action is taken and no error is reported.
+ *
+ * The `bitmask` parameter can be a combination of the following values, depending on which interrupts you want to
+ * disable:
+ *
+ * - `RVX_IRQ_SOFTWARE_BITMASK`: Disable software interrupts.
+ *
+ * - `RVX_IRQ_TIMER_BITMASK`: Disable timer interrupts.
+ *
+ * - `RVX_IRQ_EXTERNAL_BITMASK`: Disable external interrupts.
+ *
+ * - `RVX_IRQ_FAST_BITMASK(n)`: Disable the fast interrupt with index `n`
  *
  * Example usage:
  * ```c
- * // Disable Machine Timer and Machine External interrupts
- * rvx_irq_disable(RVX_IRQ_TIMER_BITMASK | RVX_IRQ_EXTERNAL_BITMASK);
- *
- * // Disable RVX Fast Interrupt 2
- * rvx_irq_disable(RVX_IRQ_FAST_BITMASK(2));
+ * // Disable timer interrupt and fast interrupt 0 in M-mode
+ * rvx_irq_disable(RVX_PRIVILEGE_LEVEL_M, RVX_IRQ_TIMER_BITMASK | RVX_IRQ_FAST_BITMASK(0));
  * ```
  *
- * @param bit_mask Bitmask of interrupts to disable in the MIE CSR.
+ * @note Disabling a specific interrupt does not affect the global interrupt enable bit for the corresponding privilege
+ * level, which will remain unchanged.
  */
-static inline void rvx_irq_disable(uint32_t bit_mask)
+static inline void rvx_irq_disable(RvxPrivilegeLevel privilege_level, uint32_t bitmask)
 {
-  RVX_CSR_CLEAR(RVX_CSR_MIE_ADDR, bit_mask);
+  if (privilege_level == RVX_PRIVILEGE_LEVEL_M)
+    RVX_CSR_CLEAR(RVX_CSR_MIE_ADDR, bitmask);
 }
 
 /**
- * @brief Globally disable all machine-level interrupts by clearing the MIE bit in MSTATUS.
+ * @brief Globally disable interrupts at the specified privilege level by clearing the appropriate global interrupt
+ * enable bit in the Status CSR.
  *
- * This function clears the global Machine Interrupt Enable (MIE) bit in the Machine Status
- * (MSTATUS) CSR. Individual interrupt enable bits in the MIE CSR remain unchanged, but
- * no interrupts will trigger traps while the global MIE bit is cleared.
+ * The `privilege_level` parameter specifies the privilege level at which to globally disable interrupts. For RVX, only
+ * machine-level interrupts are implemented, so `privilege_level` must be set to `RVX_PRIVILEGE_LEVEL_M`. If a different
+ * privilege level is specified, no action is taken and no error is reported.
  *
- * Example usage:
- * ```c
- * // Globally disable all interrupts
- * rvx_irq_disable_global();
- * ```
+ * @note Globally disabling interrupts will not clear any specific interrupt enable bits, but will prevent interrupts
+ * from causing traps to the corresponding privilege level until interrupts are globally re-enabled.
  */
-static inline void rvx_irq_disable_global(void)
+static inline void rvx_irq_disable_global(RvxPrivilegeLevel privilege_level)
 {
-  RVX_CSR_CLEAR(RVX_CSR_MSTATUSL_ADDR, RVX_CSR_MSTATUSL_MIE_BITMASK);
+  if (privilege_level == RVX_PRIVILEGE_LEVEL_M)
+    RVX_CSR_CLEAR(RVX_CSR_MSTATUSL_ADDR, RVX_CSR_MSTATUSL_MIE_BITMASK);
 }
 
 /**
- * @brief Enable vectored mode for machine-level interrupts.
+ * @brief Set the interrupt mode for the specified privilege level by setting the MODE field of the appropriate Trap
+ * Handler CSR.
  *
- * This function sets the `mode` field of the MTVEC CSR to 1, enabling vectored interrupt handling.
- * In vectored mode, the trap vector address is calculated as defined by RISC-V Privileged specs.
+ * The `privilege_level` parameter specifies the privilege level at which to enable vectored mode. For RVX, only
+ * machine-level interrupts are implemented, so `privilege_level` must be set to `RVX_PRIVILEGE_LEVEL_M`. If a different
+ * privilege level is specified, no action is taken and no error is reported.
  *
- * Example usage:
- * ```c
- * // Enables handling of interrupt requests in vectored mode
- * rvx_irq_enable_vectored_mode();
- * ```
+ * The `interrupt_mode` parameter specifies the desired interrupt mode. The following modes are supported:
+ *
+ * - `RVX_INTERRUPT_MODE_DIRECT`: In this mode, all interrupts cause a trap to the same handler address specified in the
+ * BASE field of the Trap Handler CSR. The specific interrupt cause can be determined by reading the Trap Cause CSR
+ * within the handler.
+ *
+ * - `RVX_INTERRUPT_MODE_VECTORED`: In this mode, interrupts cause a trap to an address computed as the sum of the BASE
+ * field of the Trap Handler CSR and four times the interrupt cause code. This allows different interrupt causes to have
+ * separate handlers.
+ *
+ * @param privilege_level The privilege level to configure the interrupt mode for.
+ * @param interrupt_mode The desired interrupt mode to set.
  */
-static inline void rvx_irq_enable_vectored_mode(void)
+static inline void rvx_irq_set_mode(RvxPrivilegeLevel privilege_level, RvxInterruptMode interrupt_mode)
 {
-  uint32_t base;
-  RVX_CSR_READ(RVX_CSR_MTVEC_ADDR, base);
-  base = base & RVX_CSR_MTVEC_BASE_BITMASK;
-  RVX_CSR_WRITE(RVX_CSR_MTVEC_ADDR, base | 1);
-}
-
-/**
- * @brief Enable direct mode for machine-level interrupts.
- *
- * This function clears the `mode` field of the MTVEC CSR, enabling direct interrupt handling. In
- * direct mode, all traps jump to the base address specified in MTVEC.
- *
- * Example usage:
- * ```c
- * // Enables handling of interrupt requests in direct mode
- * rvx_irq_enable_direct_mode();
- * ```
- */
-static inline void rvx_irq_enable_direct_mode(void)
-{
-  RVX_CSR_CLEAR(RVX_CSR_MTVEC_ADDR, RVX_CSR_MTVEC_MODE_BITMASK);
+  if (privilege_level == RVX_PRIVILEGE_LEVEL_M)
+  {
+    if (interrupt_mode == RVX_INTERRUPT_MODE_VECTORED)
+    {
+      uint32_t base;
+      RVX_CSR_READ(RVX_CSR_MTVEC_ADDR, base);
+      base = base & RVX_CSR_MTVEC_BASE_BITMASK;
+      RVX_CSR_WRITE(RVX_CSR_MTVEC_ADDR, base | 1);
+    }
+    else if (interrupt_mode == RVX_INTERRUPT_MODE_DIRECT)
+    {
+      RVX_CSR_CLEAR(RVX_CSR_MTVEC_ADDR, RVX_CSR_MTVEC_MODE_BITMASK);
+    }
+  }
 }
 
 /**
@@ -1428,7 +1465,7 @@ static inline void rvx_uart_send_string(RvxUart *uart_address, const char *c_str
  * Example usage:
  *
  * ```c
- * // Initialize UART at 115200 bauds per second (RVX clock is 50MHz)
+ * // Initialize UART at 115200 bauds per second (RVX connected to a 50 MHz clock source)
  * rvx_uart_init(RVX_UART_ADDRESS, 115200, 50000000);
  * ```
  *
