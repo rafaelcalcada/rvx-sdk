@@ -1370,7 +1370,7 @@ static inline void rvx_uart_wait_tx_done(RvxUart *uart_address)
  * while (!rvx_uart_data_available(RVX_UART_ADDRESS));
  *
  * // Read the received byte
- * uint8_t rx_data = rvx_uart_receive(RVX_UART_ADDRESS);
+ * uint8_t rx_data = rvx_uart_read(RVX_UART_ADDRESS);
  * ```
  *
  * @param uart_address Base address of the UART controller.
@@ -1382,27 +1382,68 @@ static inline bool rvx_uart_data_available(RvxUart *uart_address)
 }
 
 /**
- * @brief Read a received byte from the UART.
+ * @brief Read the byte received by the UART controller and clears the UART interrupt.
  *
- * This function returns the last byte received by the UART. After power-on or reset, if no data has
- * been received, the function returns `0x00`.
+ * This function is non-blocking and is meant to be called from an interrupt handler for the UART interrupt. The UART
+ * controller generates an interrupt when a new byte is received, and this function can be used to read the received
+ * byte and clear the interrupt in a single operation.
  *
- * To check if new data is available, use `rvx_uart_data_available()`.
+ * If called before any data has been received since power-on or reset, the function returns `0x00`.
+ *
+ * The read is non-destructive. If this function is called multiple times without new data being received,
+ * it will return the same byte until new data arrives.
  *
  * Example usage:
  * ```c
- * // Wait for data to be received
- * while (!rvx_uart_data_available(RVX_UART_ADDRESS));
+ * void main(void) {
+ *   // Enable Fast Interrupt 0 in M-mode
+ *   // The UART interrupt is connected to Fast Interrupt 0 by default
+ *   rvx_irq_enable(RVX_PRIVILEGE_LEVEL_M, RVX_IRQ_FAST_BITMASK(0));
+ *   // Enable interrupts globally at M-mode
+ *   rvx_irq_enable_global(RVX_PRIVILEGE_LEVEL_M);
+ *   // Wait for an UART interrupt to be received
+ *   rvx_wait_for_interrupt();
+ * }
  *
- * // Read the received byte
+ * // Implements the interrupt handler for Fast Interrupt 0
+ * RVX_TRAP_HANDLER_M(rvx_trap_handler_fast_irq_0) {
+ *   // Read the received byte and clear the interrupt
+ *   uint8_t rx_data = rvx_uart_read(RVX_UART_ADDRESS);
+ *   // Do something with rx_data ...
+ * }
+ * ```
+ *
+ * @param uart_address Base address of the UART controller.
+ * @return The last byte received by the UART controller, or `0x00` if no data has been received since
+ * power-on or reset.
+ */
+static inline uint8_t rvx_uart_read(RvxUart *uart_address)
+{
+  return uart_address->RVX_UART_READ_REG;
+}
+
+/**
+ * @brief Block until a new byte is received by the UART, then read and return that byte.
+ *
+ * This function is meant to be called from the main program loop or from a non-interrupt context where blocking
+ * behavior is acceptable.
+ *
+ * Inside UART interrupt handlers, it is recommended to use `rvx_uart_read()` instead, which is non-blocking and can be
+ * used to read the received byte and clear the interrupt in a single operation.
+ *
+ * Example usage:
+ * ```c
+ * // Blocks until a new byte is received, then reads it
  * uint8_t rx_data = rvx_uart_receive(RVX_UART_ADDRESS);
  * ```
  *
  * @param uart_address Base address of the UART controller.
- * @return The last received byte, or `0x00` if no data has been received since power-on or reset.
+ * @return The byte received by the UART controller.
  */
 static inline uint8_t rvx_uart_receive(RvxUart *uart_address)
 {
+  while (!rvx_uart_data_available(uart_address))
+    ;
   return uart_address->RVX_UART_READ_REG;
 }
 
