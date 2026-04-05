@@ -1382,16 +1382,17 @@ static inline bool rvx_uart_data_available(RvxUart *uart_address)
 }
 
 /**
- * @brief Read the byte received by the UART controller and clears the UART interrupt.
+ * @brief Read the most recent byte received by the UART controller and clears the UART interrupt.
  *
- * This function is non-blocking and is meant to be called from an interrupt handler for the UART interrupt. The UART
- * controller generates an interrupt when a new byte is received, and this function can be used to read the received
- * byte and clear the interrupt in a single operation.
+ * This function is non-blocking and is meant to be called from an interrupt handler for the UART interrupt, which is
+ * triggered by the UART controller whenever a new byte is received.
  *
- * If called before any data has been received since power-on or reset, the function returns `0x00`.
+ * If called before any data has been received since power-on or reset, returns `0x00`.
+ *
+ * If called before the completion of an on-going reception, the last fully received byte is returned.
  *
  * The read is non-destructive. If this function is called multiple times without new data being received,
- * it will return the same byte until new data arrives.
+ * it will return the same byte until a new byte is received.
  *
  * Example usage:
  * ```c
@@ -1414,7 +1415,7 @@ static inline bool rvx_uart_data_available(RvxUart *uart_address)
  * ```
  *
  * @param uart_address Base address of the UART controller.
- * @return The last byte received by the UART controller, or `0x00` if no data has been received since
+ * @return The most recent byte received by the UART controller, or `0x00` if no data has been received since
  * power-on or reset.
  */
 static inline uint8_t rvx_uart_read(RvxUart *uart_address)
@@ -1425,11 +1426,9 @@ static inline uint8_t rvx_uart_read(RvxUart *uart_address)
 /**
  * @brief Block until a new byte is received by the UART, then read and return that byte.
  *
- * This function is meant to be called from the main program loop or from a non-interrupt context where blocking
- * behavior is acceptable.
+ * This function is meant to be used in contexts where blocking behavior is acceptable.
  *
- * Inside UART interrupt handlers, it is recommended to use `rvx_uart_read()` instead, which is non-blocking and can be
- * used to read the received byte and clear the interrupt in a single operation.
+ * @note For non-blocking behavior, use `rvx_uart_read()` instead.
  *
  * Example usage:
  * ```c
