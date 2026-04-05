@@ -442,6 +442,12 @@ static inline void rvx_irq_enable(RvxPrivilegeLevel privilege_level, uint32_t bi
  * machine-level interrupts are implemented, so `privilege_level` must be set to `RVX_PRIVILEGE_LEVEL_M`. If a different
  * privilege level is specified, no action is taken and no error is reported.
  *
+ * Example usage:
+ * ```c
+ * // Globally enable interrupts in M-mode
+ * rvx_irq_enable_global(RVX_PRIVILEGE_LEVEL_M);
+ * ```
+ *
  * @note A given interrupt will only cause a trap if its specific enable bit is set in the appropriate interrupt enable
  * CSR. You can call `rvx_irq_enable()` to do this.
  *
@@ -494,6 +500,12 @@ static inline void rvx_irq_disable(RvxPrivilegeLevel privilege_level, uint32_t b
  * machine-level interrupts are implemented, so `privilege_level` must be set to `RVX_PRIVILEGE_LEVEL_M`. If a different
  * privilege level is specified, no action is taken and no error is reported.
  *
+ * Example usage:
+ * ```c
+ * // Globally disable interrupts in M-mode
+ * rvx_irq_disable_global(RVX_PRIVILEGE_LEVEL_M);
+ * ```
+ *
  * @note Globally disabling interrupts will not clear any specific interrupt enable bits, but will prevent interrupts
  * from causing traps to the corresponding privilege level until interrupts are globally re-enabled.
  */
@@ -507,7 +519,7 @@ static inline void rvx_irq_disable_global(RvxPrivilegeLevel privilege_level)
  * @brief Set the interrupt mode for the specified privilege level by setting the MODE field of the appropriate Trap
  * Handler CSR.
  *
- * The `privilege_level` parameter specifies the privilege level at which to enable vectored mode. For RVX, only
+ * The `privilege_level` parameter specifies the privilege level to configure the interrupt mode for. For RVX, only
  * machine-level interrupts are implemented, so `privilege_level` must be set to `RVX_PRIVILEGE_LEVEL_M`. If a different
  * privilege level is specified, no action is taken and no error is reported.
  *
