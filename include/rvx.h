@@ -206,10 +206,10 @@ typedef enum RvxI2cCommand
 /// The SPI mode configuration.
 typedef enum RvxSpiMode
 {
-  RVX_SPI_MODE_0 = 0, ///< SPI Mode 0 (CPOL 0 / CPHA 0).
-  RVX_SPI_MODE_1 = 1, ///< SPI Mode 1 (CPOL 0 / CPHA 1).
-  RVX_SPI_MODE_2 = 2, ///< SPI Mode 2 (CPOL 1 / CPHA 0).
-  RVX_SPI_MODE_3 = 3  ///< SPI Mode 3 (CPOL 1 / CPHA 1).
+  RVX_SPI_MODE_0 = 0, ///< SPI Mode 0 (CPOL = 0 / CPHA = 0).
+  RVX_SPI_MODE_1 = 1, ///< SPI Mode 1 (CPOL = 0 / CPHA = 1).
+  RVX_SPI_MODE_2 = 2, ///< SPI Mode 2 (CPOL = 1 / CPHA = 0).
+  RVX_SPI_MODE_3 = 3  ///< SPI Mode 3 (CPOL = 1 / CPHA = 1).
 } RvxSpiMode;
 
 /// Provide access to the I2C controller registers.
@@ -1067,138 +1067,107 @@ static inline bool rvx_i2c_reade_from(RvxI2c *i2c_address, const uint8_t slave_a
 }
 
 /**
- * @brief Configure the SPI controller to operate on a given mode.
+ * @brief Initialize the SPI controller with the specified mode and SCLK (SPI clock) frequency configuration.
  *
- * The four possible modes are:
+ * The `spi_mode` parameter specifies the desired SPI mode, which determines the clock polarity (CPOL) and clock phase
+ * (CPHA):
  *
- *   - RVX_SPI_MODE_0 (CPOL 0, CPHA 0).
+ * - `RVX_SPI_MODE_0` (CPOL = 0, CPHA = 0)
  *
- *   - RVX_SPI_MODE_1 (CPOL 0, CPHA 1).
+ * - `RVX_SPI_MODE_1` (CPOL = 0, CPHA = 1)
  *
- *   - RVX_SPI_MODE_2 (CPOL 1, CPHA 0).
+ * - `RVX_SPI_MODE_2` (CPOL = 1, CPHA = 0)
  *
- *   - RVX_SPI_MODE_3 (CPOL 1, CPHA 1).
+ * - `RVX_SPI_MODE_3` (CPOL = 1, CPHA = 1)
+ *
+ * The `sclk_config` parameter is an 8-bit value (0–255) that determines the frequency of the SCLK (SPI clock) output
+ * pin. The SCLK frequency is derived from the system clock using the following formula:
+ *
+ * - `sclk_freq = sys_freq / [2 * (sclk_config + 1)]`
+ *
+ * In the above formula, `sys_freq` is the frequency of the system clock driving RVX and `sclk_config` is the
+ * configuration value provided. A smaller `sclk_config` value results in a faster SCLK frequency, while a larger value
+ * results in a slower SCLK frequency. For example:
+ *
+ * - `sclk_config = 0` → `sclk_freq` = `sys_freq` / 2 (fastest)
+ *
+ * - `sclk_config = 255` → `sclk_freq` = `sys_freq` / 512 (slowest)
+ *
+ * Example usage:
+ * ```c
+ * // Initialize SPI in mode 0 with SCLK frequency of sys_freq / 16
+ * rvx_spi_init(RVX_SPI_ADDRESS, RVX_SPI_MODE_0, 7);
+ * ```
  *
  * @param spi_address Base address of the SPI controller.
- * @param mode Desired mode as `RvxSpiMode`.
+ * @param spi_mode Desired mode as `RvxSpiMode`.
+ * @param sclk_config Configuration value (0–255) that determines the SCLK output pin frequency.
  */
-static inline void rvx_spi_mode_set(RvxSpi *spi_address, RvxSpiMode mode)
+static inline void rvx_spi_init(RvxSpi *spi_address, RvxSpiMode spi_mode, uint8_t sclk_config)
 {
-  spi_address->RVX_SPI_MODE = mode;
+  spi_address->RVX_SPI_MODE = spi_mode;
+  spi_address->RVX_SPI_DIVIDER = sclk_config;
 }
 
 /**
- * @brief Read the current SPI controller mode.
+ * @brief Assert the CS (Chip Select) pin controlled by the SPI controller.
  *
- * @param spi_address Base address of the SPI controller.
- * @return The SPI controller mode as `RvxSpiMode`.
- */
-static inline RvxSpiMode rvx_spi_mode_get(RvxSpi *spi_address)
-{
-  return (RvxSpiMode)spi_address->RVX_SPI_MODE;
-}
-
-/**
- * @brief Assert the Chip Select (CS) line controlled by the SPI controller.
- *
- * The SPI controller hardware provides only one Chip Select output under its control.
- * To communicate with multiple SPI devices on the same bus, use additional GPIO pins
- * as software-controlled CS lines.
+ * The SPI controller provides only one CS pin under its control. To communicate with multiple SPI devices on the same
+ * bus, use additional GPIO pins as software-controlled CS lines.
  *
  * @param spi_address Base address of the SPI controller.
  */
-static inline void rvx_spi_chip_select_assert(RvxSpi *spi_address)
+static inline void rvx_spi_assert_cs(RvxSpi *spi_address)
 {
   spi_address->RVX_SPI_CHIP_SELECT = 0;
 }
 
 /**
- * @brief Deassert the Chip Select (CS) line controlled by the SPI controller.
+ * @brief Deassert the CS (Chip Select) pin controlled by the SPI controller.
  *
- * The SPI controller hardware provides only one Chip Select output under its control.
- * To communicate with multiple SPI devices on the same bus, use additional GPIO pins
- * as software-controlled CS lines.
+ * The SPI controller provides only one CS pin under its control. To communicate with multiple SPI devices on the same
+ * bus, use additional GPIO pins as software-controlled CS lines.
  *
  * @param spi_address Base address of the SPI controller.
  */
-static inline void rvx_spi_chip_select_deassert(RvxSpi *spi_address)
+static inline void rvx_spi_deassert_cs(RvxSpi *spi_address)
 {
   spi_address->RVX_SPI_CHIP_SELECT = 1;
 }
 
 /**
- * @brief Set the SPI clock (SCLK) frequency.
+ * @brief Perform a full-duplex SPI transfer.
  *
- * This function configures the divider that controls the frequency of the SCLK output pin.
- * The SCLK pin frequency is derived from the system clock according to:
+ * This function transmits `tx_data` to a SPI subordinate device while simultaneously receiving a byte from
+ * the subordinate. The subordinate device must be selected prior to calling this function by asserting its CS (Chip
+ * Select) line.
  *
- *     `f_SCLK = f_clock / [2 * (divider + 1)]`
+ * The return value is undefined if no SPI subordinate is selected.
  *
- * where:
+ * Example usage:
+ * ```c
+ * // Initialize SPI in mode 0 with SCLK frequency of sys_freq / 16
+ * rvx_spi_init(RVX_SPI_ADDRESS, RVX_SPI_MODE_0, 7);
  *
- * - `f_clock` is the system clock frequency
+ * // Transmit 0xAB to a subordinate device connected to the CS line controlled
+ * // by the SPI controller and receive a byte simultaneously.
+ * rvx_spi_assert_cs(RVX_SPI_ADDRESS);
+ * uint8_t received_1 = rvx_spi_transfer(RVX_SPI_ADDRESS, 0xAB);
+ * rvx_spi_deassert_cs(RVX_SPI_ADDRESS);
  *
- * - `divider` is the value set by this function
- *
- * A smaller divider gives a faster SPI clock:
- *
- * - `divider = 0` → fastest clock: `f_SCLK = f_clock / 2`
- *
- * - `divider = 255` → slowest clock: `f_SCLK = f_clock / 512`
- *
- * @param spi_address Base address of the SPI controller.
- * @param divider Clock divider value (0–255) that determines the SCLK output frequency.
- */
-static inline void rvx_spi_clock_set_divider(RvxSpi *spi_address, const uint8_t divider)
-{
-  spi_address->RVX_SPI_DIVIDER = divider;
-}
-
-/**
- * @brief Return the current `divider` value configured for the SCLK (SPI clock) frequency.
- *
- * This function reads the `divider` setting in the SPI controller, which determines the frequency
- * of the SCLK output pin according to the formula:
- *
- *     `f_SCLK = f_clock / [2 * (divider + 1)]`
+ * // Transmit 0xCD to another subordinate device using a GPIO-controlled CS line.
+ * rvx_gpio_set_low(RVX_GPIO_ADDRESS, 0); // Assert GPIO-controlled CS for the second device
+ * uint8_t received_2 = rvx_spi_transfer(RVX_SPI_ADDRESS, 0xCD);
+ * rvx_gpio_set_high(RVX_GPIO_ADDRESS, 0); // Deassert GPIO-controlled CS for the second device
+ * ```
  *
  * @param spi_address Base address of the SPI controller.
- * @return The current divider configuration value.
+ * @param tx_data Byte to be transmitted.
+ * @return The byte received from the SPI subordinate during the transfer.
  */
-static inline uint8_t rvx_spi_clock_get_divider(RvxSpi *spi_address)
+static inline uint8_t rvx_spi_transfer(RvxSpi *spi_address, const uint8_t tx_data)
 {
-  return spi_address->RVX_SPI_DIVIDER;
-}
-
-/**
- * @brief Write a byte to the SPI controller.
- *
- * Sends a byte to the SPI device selected by the active CS line and blocks until the transfer
- * completes. The data received from the SPI controller during the transfer is ignored.
- *
- * @param spi_address Base address of the SPI controller.
- * @param wdata Byte to be transmitted.
- */
-static inline void rvx_spi_write(RvxSpi *spi_address, const uint8_t wdata)
-{
-  spi_address->RVX_SPI_WRITE = wdata;
-  while (spi_address->RVX_SPI_STATUS & 1)
-    ;
-}
-
-/**
- * @brief Send a byte over SPI and receive a byte simultaneously.
- *
- * Transmits a byte to the SPI controller selected by the active CS line and blocks until the
- * transfer completes. Returns the byte received from the SPI controller during the transfer.
- *
- * @param spi_address Base address of the SPI controller.
- * @param wdata Byte to be transmitted.
- * @return Byte received from the selected SPI controller during the transfer.
- */
-static inline uint8_t rvx_spi_transfer(RvxSpi *spi_address, const uint8_t wdata)
-{
-  spi_address->RVX_SPI_WRITE = wdata;
+  spi_address->RVX_SPI_WRITE = tx_data;
   while (spi_address->RVX_SPI_STATUS & 1)
     ;
   return spi_address->RVX_SPI_READ;
