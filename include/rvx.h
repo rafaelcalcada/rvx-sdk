@@ -1174,45 +1174,40 @@ static inline uint8_t rvx_spi_transfer(RvxSpi *spi_address, const uint8_t tx_dat
 }
 
 /**
- * @brief Enable the timer. When enabled, the 64-bit timer counter increments on every rising
- * edge of the timer's input clock signal.
- *
- * @note If the timer is already enabled, calling this function has no effect.
+ * @brief Start the timer, incrementing the timer counter on every clock rising edge.
  *
  * @param timer_address Base address of the Timer module.
  */
-static inline void rvx_timer_enable(RvxTimer *timer_address)
+static inline void rvx_timer_start(RvxTimer *timer_address)
 {
-  RVX_SET_BIT(timer_address->RVX_TIMER_COUNTER_ENABLE, 0);
+  timer_address->RVX_TIMER_COUNTER_ENABLE = 1;
 }
 
 /**
- * @brief Disable the timer. When disabled, the 64-bit timer counter stops incrementing and retains
- * its current value.
- *
- * @note If the timer is already disabled, calling this function has no effect.
+ * @brief Stop the timer, retaining the current counter value until the timer is started again.
  *
  * @param timer_address Base address of the Timer module.
  */
-static inline void rvx_timer_disable(RvxTimer *timer_address)
+static inline void rvx_timer_stop(RvxTimer *timer_address)
 {
-  RVX_CLR_BIT(timer_address->RVX_TIMER_COUNTER_ENABLE, 0);
+  timer_address->RVX_TIMER_COUNTER_ENABLE = 0;
 }
 
 /**
- * @brief Check if the timer counter is enabled.
+ * @brief Return `true` if the timer is currently running (counting), or `false` if it is stopped.
  *
  * @param timer_address Base address of the Timer module.
- * @return true if the timer is enabled, false otherwise.
+ * @return `true` if the timer is running, `false` otherwise.
  */
-static inline bool rvx_timer_is_enabled(RvxTimer *timer_address)
+static inline bool rvx_timer_is_running(RvxTimer *timer_address)
 {
-  return RVX_READ_BIT(timer_address->RVX_TIMER_COUNTER_ENABLE, 0);
+  return timer_address->RVX_TIMER_COUNTER_ENABLE;
 }
 
 /**
- * @brief Set a new value for the timer counter. The value can be updated whether counting is
- * enabled or disabled.
+ * @brief Set the value of the 64-bit timer counter.
+ *
+ * The timer counter can be updated irrespective of whether the timer is currently running or stopped.
  *
  * @param timer_address Base address of the Timer module.
  * @param new_value 64-bit value to assign to the timer counter.
@@ -1225,7 +1220,9 @@ static inline void rvx_timer_set_counter(RvxTimer *timer_address, uint64_t new_v
 }
 
 /**
- * @brief Read the current value of the timer counter.
+ * @brief Read the current value of the 64-bit timer counter.
+ *
+ * The timer counter can be read irrespective of whether the timer is currently running or stopped.
  *
  * @param timer_address Base address of the Timer module.
  * @return 64-bit value representing the current timer count.
@@ -1243,33 +1240,10 @@ static inline uint64_t rvx_timer_get_counter(RvxTimer *timer_address)
 }
 
 /**
- * @brief Clear the 64-bit timer counter by setting it to 0.
+ * @brief Set the value of the 64-bit timer compare register.
  *
- * The counter is set to zero regardless of whether counting is enabled or disabled.
- *
- * @param timer_address Base address of the Timer module.
- */
-static inline void rvx_timer_clear_counter(RvxTimer *timer_address)
-{
-  timer_address->RVX_TIMER_COUNTERL = 0;
-  timer_address->RVX_TIMER_COUNTERH = 0;
-  timer_address->RVX_TIMER_COUNTERL = 0;
-}
-
-/**
- * @brief Set a new value for the 64-bit timer compare register.
- *
- * A timer interrupt is triggered when the timer counter is equal to or greater than the
+ * @note A timer interrupt is triggered when the timer counter is equal to or greater than the
  * compare register.
- *
- * To prevent spurious interrupts while updating the compare register, the value is written
- * according to the RISC-V Privileged Architecture Specification v2 (pp. 45-46):
- *
- * 1. Set the lower 32-bit register to 0xFFFFFFFF temporarily.
- *
- * 2. Write the upper 32-bit register.
- *
- * 3. Write the desired lower 32-bit value.
  *
  * @param timer_address Base address of the Timer module.
  * @param new_value 64-bit value to assign to the compare register.
@@ -1282,25 +1256,14 @@ static inline void rvx_timer_set_compare(RvxTimer *timer_address, uint64_t new_v
 }
 
 /**
- * @brief Get the current value of the 64-bit timer compare register.
+ * @brief Read the current value of the 64-bit timer compare register.
  *
  * @param timer_address Base address of the Timer module.
- * @return uint64_t The current value of the compare register.
+ * @return The current value of the timer compare register.
  */
 static inline uint64_t rvx_timer_get_compare(RvxTimer *timer_address)
 {
   return ((uint64_t)timer_address->RVX_TIMER_COMPAREH << 32) | timer_address->RVX_TIMER_COMPAREL;
-}
-
-/**
- * @brief Clear the timer interrupt by setting the compare register to its maximum value.
- *
- * @param timer_address Base address of the Timer module.
- */
-static inline void rvx_timer_clear_interrupt(RvxTimer *timer_address)
-{
-  timer_address->RVX_TIMER_COMPAREL = 0xFFFFFFFFU;
-  timer_address->RVX_TIMER_COMPAREH = 0xFFFFFFFFU;
 }
 
 /**
