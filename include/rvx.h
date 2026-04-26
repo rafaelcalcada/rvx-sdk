@@ -197,10 +197,11 @@ typedef enum RvxGpioPinDirection
 /// The I2C command.
 typedef enum RvxI2cCommand
 {
-  RVX_I2C_COMMAND_START = 0,   ///< I2C Command start.
-  RVX_I2C_COMMAND_RESTART = 1, ///< I2C Command restart.
-  RVX_I2C_COMMAND_STOP = 2,    ///< I2C Command stop.
-  RVX_I2C_COMMAND_DATA = 3     ///< I2C Command data.
+  RVX_I2C_COMMAND_NOP = 0,     ///< I2C No operation (NOP) command.
+  RVX_I2C_COMMAND_START = 1,   ///< I2C Command start.
+  RVX_I2C_COMMAND_RESTART = 2, ///< I2C Command restart.
+  RVX_I2C_COMMAND_STOP = 3,    ///< I2C Command stop.
+  RVX_I2C_COMMAND_DATA = 4     ///< I2C Command data.
 } RvxI2cCommand;
 
 /// The SPI mode configuration.
