@@ -216,10 +216,10 @@ typedef enum RvxSpiMode
 /// Provide access to the I2C controller registers.
 typedef struct RVX_ALIGNED RvxI2c
 {
-  volatile uint32_t RVX_I2C_PRESCALE_REG; ///< RVX I2C Prescale Register.
-  volatile uint32_t RVX_I2C_DATA_REG;     ///< RVX I2C Data Register.
-  volatile uint32_t RVX_I2C_COMMAND_REG;  ///< RVX I2C Command Register.
-  volatile uint32_t RVX_I2C_STATUS_REG;   ///< RVX I2C Status Register.
+  volatile uint32_t RVX_I2C_DIVIDER_REG; ///< RVX I2C Divider Register.
+  volatile uint32_t RVX_I2C_DATA_REG;    ///< RVX I2C Data Register.
+  volatile uint32_t RVX_I2C_COMMAND_REG; ///< RVX I2C Command Register.
+  volatile uint32_t RVX_I2C_STATUS_REG;  ///< RVX I2C Status Register.
 } RvxI2c;
 
 /// Provide access to the GPIO controller registers.
@@ -848,31 +848,42 @@ static inline void rvx_gpio_write_mask(RvxGpio *gpio_address, const uint32_t val
 }
 
 /**
- * @brief Set the I2C clock (SCL) frequency.
+ * @brief Set the clock divider for the I2C controller, adjusting the frequency of the I2C clock signal and consequently
+ * the data transfer rate.
  *
- * This function configures the prescale that controls the frequency of the SCL output pin.
- * The SCL pin frequency is prescale from the system clock according to:
+ * The actual I2C clock frequency is determined by the formula:
  *
- *     `f_SCL = f_clock / [4 * (prescale + 1)]`
+ * - `scl_freq = rvx_clock_freq / clock_divider`
  *
- * where:
+ * Where:
  *
- * - `f_clock` is the system clock frequency
+ * - `scl_freq` is the resulting I2C clock frequency (SCL line frequency).
  *
- * - `prescale` is the value set by this function
+ * - `rvx_clock_freq` is the frequency of the clock driving RVX (and thus the I2C controller).
  *
- * A smaller divider gives a faster I2C clock:
+ * - `clock_divider` is the even integer value passed to this function, which must be between 2 and 65534 (inclusive).
  *
- * - `prescale = 0` → fastest clock: `f_SCL = f_clock / 4`
+ * If an odd value is passed for `clock_divider`, it will be rounded down to the nearest even integer without error.
  *
- * - `prescale = 65534` → slowest clock: `f_SCL = f_clock / 262140`
+ * If a value outside the valid range is passed for `clock_divider`, it will be rounded to the nearest valid value (2 or
+ * 65534) without error.
+ *
+ * Example usage:
+ * ```c
+ * // Divide RVX clock by 120 for I2C communication.
+ * // For example, if RVX is connected to a 12MHz clock source, the resulting I2C speed will be 100kHz.
+ * rvx_i2c_set_divider(RVX_I2C_ADDRESS, 120);
+ * ```
+ *
+ * @note After reset, the `clock_divider` is set to 2 by default.
  *
  * @param i2c_address Base address of the I2C controller.
- * @param prescale value (0–65534) that determines the SCL output frequency.
+ * @param clock_divider Even integer between 2 and 65534 (inclusive) that determines the I2C SCL pin frequency.
+ *
  */
-static inline void rvx_i2c_prescale_set(RvxI2c *i2c_address, const uint16_t prescale)
+static inline void rvx_i2c_set_divider(RvxI2c *i2c_address, const uint16_t clock_divider)
 {
-  i2c_address->RVX_I2C_PRESCALE_REG = prescale;
+  i2c_address->RVX_I2C_DIVIDER_REG = (clock_divider >> 1) - 1;
 }
 
 /**
@@ -1068,10 +1079,9 @@ static inline bool rvx_i2c_reade_from(RvxI2c *i2c_address, const uint8_t slave_a
 }
 
 /**
- * @brief Initialize the SPI controller with the specified mode and SCLK (SPI clock) frequency configuration.
+ * @brief Set the mode of the SPI controller.
  *
- * The `spi_mode` parameter specifies the desired SPI mode, which determines the clock polarity (CPOL) and clock phase
- * (CPHA):
+ * This function allows changing the SPI mode to any of the four supported modes:
  *
  * - `RVX_SPI_MODE_0` (CPOL = 0, CPHA = 0)
  *
@@ -1081,33 +1091,58 @@ static inline bool rvx_i2c_reade_from(RvxI2c *i2c_address, const uint8_t slave_a
  *
  * - `RVX_SPI_MODE_3` (CPOL = 1, CPHA = 1)
  *
- * The `sclk_config` parameter is an 8-bit value (0–255) that determines the frequency of the SCLK (SPI clock) output
- * pin. The SCLK frequency is derived from the system clock using the following formula:
- *
- * - `sclk_freq = sys_freq / [2 * (sclk_config + 1)]`
- *
- * In the above formula, `sys_freq` is the frequency of the system clock driving RVX and `sclk_config` is the
- * configuration value provided. A smaller `sclk_config` value results in a faster SCLK frequency, while a larger value
- * results in a slower SCLK frequency. For example:
- *
- * - `sclk_config = 0` → `sclk_freq` = `sys_freq` / 2 (fastest)
- *
- * - `sclk_config = 255` → `sclk_freq` = `sys_freq` / 512 (slowest)
- *
  * Example usage:
  * ```c
- * // Initialize SPI in mode 0 with SCLK frequency of sys_freq / 16
- * rvx_spi_init(RVX_SPI_ADDRESS, RVX_SPI_MODE_0, 7);
+ * // Change the SPI mode to 1 (CPOL = 0, CPHA = 1)
+ * rvx_spi_set_mode(RVX_SPI_ADDRESS, RVX_SPI_MODE_1);
  * ```
+ *
+ * @note After reset, the SPI controller is in mode 0 (CPOL = 0, CPHA = 0) by default.
  *
  * @param spi_address Base address of the SPI controller.
  * @param spi_mode Desired mode as `RvxSpiMode`.
- * @param sclk_config Configuration value (0–255) that determines the SCLK output pin frequency.
  */
-static inline void rvx_spi_init(RvxSpi *spi_address, RvxSpiMode spi_mode, uint8_t sclk_config)
+static inline void rvx_spi_set_mode(RvxSpi *spi_address, RvxSpiMode spi_mode)
 {
   spi_address->RVX_SPI_MODE = spi_mode;
-  spi_address->RVX_SPI_DIVIDER = sclk_config;
+}
+
+/**
+ * @brief Set the clock divider for the SPI controller, adjusting the frequency of the SPI clock signal and
+ * consequently the data transfer rate.
+ *
+ * The SCLK pin frequency is determined by the `clock_divider` parameter according to the formula:
+ *
+ * - `sclk_freq = rvx_clock_freq / clock_divider`
+ *
+ * Where:
+ *
+ * - `sclk_freq` is the resulting SPI clock frequency (SCLK line frequency).
+ *
+ * - `rvx_clock_freq` is the frequency of the clock driving RVX (and thus the SPI controller).
+ *
+ * - `clock_divider` is the even integer value passed to this function, which must be between 2 and 65534 (inclusive).
+ *
+ * If an odd value is passed for `clock_divider`, it will be rounded down to the nearest even integer without error.
+ *
+ * If a value outside the valid range is passed for `clock_divider`, it will be rounded to the nearest valid value (2 or
+ * 65534) without error.
+ *
+ * Example usage:
+ * ```c
+ * // Divide RVX clock by 12 for SPI communication.
+ * // For example, if RVX is connected to a 12MHz clock source, the resulting SPI speed will be 1MHz.
+ * rvx_spi_set_divider(RVX_SPI_ADDRESS, 12);
+ * ```
+ *
+ * @note After reset, the `clock_divider` is set to 2 by default.
+ *
+ * @param spi_address Base address of the SPI controller.
+ * @param clock_divider Even integer between 2 and 65534 (inclusive) that determines the SCLK pin frequency.
+ */
+static inline void rvx_spi_set_divider(RvxSpi *spi_address, uint16_t clock_divider)
+{
+  spi_address->RVX_SPI_DIVIDER = (uint8_t)(clock_divider >> 1) - 1;
 }
 
 /**
@@ -1147,8 +1182,9 @@ static inline void rvx_spi_deassert_cs(RvxSpi *spi_address)
  *
  * Example usage:
  * ```c
- * // Initialize SPI in mode 0 with SCLK frequency of sys_freq / 16
- * rvx_spi_init(RVX_SPI_ADDRESS, RVX_SPI_MODE_0, 7);
+ * // Initialize SPI controller in mode 0 and set speed to 1/12 of the RVX clock frequency.
+ * rvx_spi_set_mode(RVX_SPI_ADDRESS, RVX_SPI_MODE_0);
+ * rvx_spi_set_divider(RVX_SPI_ADDRESS, 12);
  *
  * // Transmit 0xAB to a subordinate device connected to the CS line controlled
  * // by the SPI controller and receive a byte simultaneously.
