@@ -126,9 +126,11 @@
 
 /// @name Bit masks for I2C Status register.
 /// @{
-#define RVX_I2C_STATUS_RUN_BITMASK (1U << 0U)           ///< Bitmask for the I2C: Status register run bit.
-#define RVX_I2C_STATUS_NOACKNOWLEDGE_BITMASK (1U << 1U) ///< Bitmask for the I2C: Status register no acknowledge bit.
-#define RVX_I2C_STATUS_IRQ_BITMASK (1U << 2U)           ///< Bitmask for the I2C: Status register IRQ bit.
+#define RVX_I2C_STATUS_RUN_BITMASK (1U << 0U) ///< Bitmask for the I2C: Status register RUN bit.
+#define RVX_I2C_STATUS_ACK_BITMASK (1U << 1U) ///< Bitmask for the I2C: Status register ACK bit.
+#define RVX_I2C_STATUS_IRQ_BITMASK (1U << 2U) ///< Bitmask for the I2C: Status register IRQ bit.
+#define RVX_I2C_STATUS_SDA_BITMASK (1U << 3U) ///< Bitmask for the I2C: Status register SDA bit.
+#define RVX_I2C_STATUS_SCL_BITMASK (1U << 4U) ///< Bitmask for the I2C: Status register SCL bit.
 /// @}
 
 /// @brief Privilege levels in the RISC-V architecture.
@@ -887,194 +889,274 @@ static inline void rvx_i2c_set_divider(RvxI2c *i2c_address, const uint16_t clock
 }
 
 /**
- * @brief Read a received byte from the I2C.
+ * @brief Start an I2C transaction.
  *
- * This function returns the byte received by the I2C.
+ * This function initiates an I2C transaction by setting the START condition on the I2C bus.
  *
- * @param i2c_address Base address of the I2C controller.
- * @return The received byte.
- */
-static inline uint8_t rvx_i2c_get_data(RvxI2c *i2c_address)
-{
-  return i2c_address->RVX_I2C_DATA_REG;
-}
-
-/**
- * @brief Check if the I2C is busy.
+ * If the I2C bus is currently busy (SDA or SCL lines are low, or a transaction is already in progress), this function
+ * will return `false` and will not attempt to start a new transaction.
  *
- * @param i2c_address Base address of the I2C controller.
- * @return `true` if the I2C is busy, `false` otherwise.
- */
-static inline bool rvx_i2c_is_busy(RvxI2c *i2c_address)
-{
-  return i2c_address->RVX_I2C_STATUS_REG & RVX_I2C_STATUS_RUN_BITMASK;
-}
-
-/**
- * @brief Busy-wait until the I2C is complete.
+ * If the bus is idle, the START condition will be initiated and the function will return `true`.
  *
- * This function continuously checks the I2C status register and returns only when the I2C is ready to
- * send new run.
+ * @note This is a low-level function that only sends the START condition. For a complete I2C transaction,
+ * use `rvx_i2c_write()`, `rvx_i2c_read()` or `rvx_i2c_write_read()`.
  *
  * @param i2c_address Base address of the I2C controller.
  */
-static inline void rvx_i2c_wait(RvxI2c *i2c_address)
+static inline bool rvx_i2c_start(RvxI2c *i2c_address)
 {
-  while (rvx_i2c_is_busy(i2c_address))
-    ;
-}
-
-/**
- * @brief Check if the I2C received "no acknowledge".
- *
- * @param i2c_address Base address of the I2C controller.
- * @return `true` if the I2C is received "no acknowledge", `false` otherwise.
- */
-static inline bool rvx_i2c_is_no_acknowledge(RvxI2c *i2c_address)
-{
-  return i2c_address->RVX_I2C_STATUS_REG & RVX_I2C_STATUS_NOACKNOWLEDGE_BITMASK;
-}
-
-/**
- * @brief Check if there is an interrupt request on the I2C interface.
- *
- * @param i2c_address Base address of the I2C controller.
- * @return `true` if the I2C has an interrupt request, `false` otherwise.
- */
-static inline bool rvx_i2c_is_irq(RvxI2c *i2c_address)
-{
-  return i2c_address->RVX_I2C_STATUS_REG & RVX_I2C_STATUS_IRQ_BITMASK;
-}
-
-/**
- * @brief Clear an interrupt request on the I2C interface.
- *
- * @param i2c_address Base address of the I2C controller.
- */
-static inline void rvx_i2c_clear_irq(RvxI2c *i2c_address)
-{
-  RVX_SET_MASK(i2c_address->RVX_I2C_STATUS_REG, RVX_I2C_STATUS_IRQ_BITMASK);
-}
-
-/**
- * @brief Run encode start condition on I2C interface.
- *
- * @param i2c_address Base address of the I2C controller.
- */
-static inline void rvx_i2c_run_start(RvxI2c *i2c_address)
-{
+  if ((i2c_address->RVX_I2C_STATUS_REG & RVX_I2C_STATUS_SDA_BITMASK) == 0)
+    return false;
+  if ((i2c_address->RVX_I2C_STATUS_REG & RVX_I2C_STATUS_SCL_BITMASK) == 0)
+    return false;
+  if ((i2c_address->RVX_I2C_STATUS_REG & RVX_I2C_STATUS_RUN_BITMASK) == 1)
+    return false;
   i2c_address->RVX_I2C_COMMAND_REG = RVX_I2C_COMMAND_START;
   i2c_address->RVX_I2C_STATUS_REG = RVX_I2C_STATUS_RUN_BITMASK;
-  rvx_i2c_wait(i2c_address);
-}
-
-/**
- * @brief Run encode restart condition on I2C interface.
- *
- * @param i2c_address Base address of the I2C controller.
- */
-static inline void rvx_i2c_run_restart(RvxI2c *i2c_address)
-{
-  i2c_address->RVX_I2C_COMMAND_REG = RVX_I2C_COMMAND_RESTART;
-  i2c_address->RVX_I2C_STATUS_REG = RVX_I2C_STATUS_RUN_BITMASK;
-  rvx_i2c_wait(i2c_address);
-}
-
-/**
- * @brief Run encode stop condition on I2C interface.
- *
- * @param i2c_address Base address of the I2C controller.
- */
-static inline void rvx_i2c_run_stop(RvxI2c *i2c_address)
-{
-  i2c_address->RVX_I2C_COMMAND_REG = RVX_I2C_COMMAND_STOP;
-  i2c_address->RVX_I2C_STATUS_REG = RVX_I2C_STATUS_RUN_BITMASK;
-  rvx_i2c_wait(i2c_address);
-}
-
-/**
- * @brief Run write data on I2C interface.
- *
- * @param i2c_address Base address of the I2C controller.
- * @param data The byte to write (`uint8_t`).
- * @param is_acknowledge (`true` for set acknowledge or `false` for set no acknowledge).
- */
-static inline void rvx_i2c_run_write(RvxI2c *i2c_address, const uint8_t data, const bool is_no_acknowledge)
-{
-  i2c_address->RVX_I2C_DATA_REG = data;
-  i2c_address->RVX_I2C_COMMAND_REG = RVX_I2C_COMMAND_DATA;
-  if (is_no_acknowledge)
-  {
-    i2c_address->RVX_I2C_STATUS_REG = RVX_I2C_STATUS_NOACKNOWLEDGE_BITMASK | RVX_I2C_STATUS_RUN_BITMASK;
-  }
-  else
-  {
-    i2c_address->RVX_I2C_STATUS_REG = RVX_I2C_STATUS_RUN_BITMASK;
-  }
-  rvx_i2c_wait(i2c_address);
-}
-
-/**
- * @brief Run read data I2C interface with acknowledge or no acknowledge.
- *
- * @param i2c_address Base address of the I2C controller.
- * @param is_acknowledge (`true` for set acknowledge or `false` for set no acknowledge).
- */
-static inline void rvx_i2c_run_read(RvxI2c *i2c_address, const bool is_no_acknowledge)
-{
-  rvx_i2c_run_write(i2c_address, 0xFF, is_no_acknowledge);
-}
-
-/**
- * @brief Write data to a slave device on the I2C.
- *
- * @param i2c_address Base address of the I2C controller.
- * @param slave_address I2C Slave address (uint8_t).
- * @param buffer Pointer to the source buffer (uint8_t *).
- * @param size The size of data in the buffer (size_t).
- * @return The acknowledge (`true` for all acknowledge or `false` no acknowledge).
- */
-static inline bool rvx_i2c_write_to(RvxI2c *i2c_address, const uint8_t slave_address, const uint8_t *buffer,
-                                    const size_t size)
-{
-  rvx_i2c_run_write(i2c_address, (slave_address << 1) & 0xFE, true);
-  if (rvx_i2c_is_no_acknowledge(i2c_address))
-  {
-    return false;
-  }
-  for (size_t i = 0; i < size; i++)
-  {
-    rvx_i2c_run_write(i2c_address, *buffer++, true);
-    if (rvx_i2c_is_no_acknowledge(i2c_address))
-    {
-      return false;
-    }
-  }
+  while (i2c_address->RVX_I2C_STATUS_REG & RVX_I2C_STATUS_RUN_BITMASK)
+    ;
   return true;
 }
 
 /**
- * @brief Read data from a slave device on the I2C.
+ * @brief Send a repeated START condition on the I2C bus.
+ *
+ * This function is used to initiate a repeated START condition, which is typically used in multi-byte
+ * I2C transactions without releasing the bus.
+ *
+ * @note This is a low-level function that only sends the repeated START condition. For a complete I2C transaction,
+ * use `rvx_i2c_write()`, `rvx_i2c_read()` or `rvx_i2c_write_read()`.
  *
  * @param i2c_address Base address of the I2C controller.
- * @param slave_address I2C Slave address (uint8_t).
- * @param buffer Pointer to the destination buffer (uint8_t *).
- * @param size The size of data in the buffer (size_t).
- * @return The acknowledge (`true` for all acknowledge or `false` no acknowledge).
  */
-static inline bool rvx_i2c_reade_from(RvxI2c *i2c_address, const uint8_t slave_address, uint8_t *buffer,
-                                      const size_t size)
+static inline void rvx_i2c_repeated_start(RvxI2c *i2c_address)
 {
-  rvx_i2c_run_write(i2c_address, (slave_address << 1) | 0x01, true);
-  if (rvx_i2c_is_no_acknowledge(i2c_address))
+  i2c_address->RVX_I2C_COMMAND_REG = RVX_I2C_COMMAND_RESTART;
+  i2c_address->RVX_I2C_STATUS_REG = RVX_I2C_STATUS_RUN_BITMASK;
+  while (i2c_address->RVX_I2C_STATUS_REG & RVX_I2C_STATUS_RUN_BITMASK)
+    ;
+}
+
+/**
+ * @brief Send a STOP condition on the I2C bus, ending the current transaction and releasing the bus.
+ *
+ * This function should be called at the end of an I2C transaction to signal to the peripheral device(s) that the
+ * transaction is complete.
+ *
+ * @note This is a low-level function that only sends the STOP condition. For a complete I2C transaction,
+ * use `rvx_i2c_write()`, `rvx_i2c_read()` or `rvx_i2c_write_read()`.
+ *
+ * @param i2c_address Base address of the I2C controller.
+ */
+static inline void rvx_i2c_stop(RvxI2c *i2c_address)
+{
+  i2c_address->RVX_I2C_COMMAND_REG = RVX_I2C_COMMAND_STOP;
+  i2c_address->RVX_I2C_STATUS_REG = RVX_I2C_STATUS_RUN_BITMASK;
+  while (i2c_address->RVX_I2C_STATUS_REG & RVX_I2C_STATUS_RUN_BITMASK)
+    ;
+}
+
+/**
+ * @brief Send a byte of data over the I2C bus.
+ *
+ * The byte can be either an address byte (with the R/W bit) or a data byte, depending on the context of the
+ * transaction.
+ *
+ * If the byte was acknowledged by the peripheral device (ACK received), the function returns `true`. If the byte was
+ * not acknowledged (NACK received), the function returns `false`.
+ *
+ * @note This is a low-level function. See `rvx_i2c_write()` for a higher-level function that handles a complete I2C
+ * write transaction, including sending the START condition, address byte, data bytes, and STOP condition.
+ *
+ * @param i2c_address Base address of the I2C controller.
+ * @param byte Byte to be sent over the I2C bus.
+ * @return true if the byte was acknowledged by the peripheral device, false otherwise.
+ */
+static inline bool rvx_i2c_send_byte(RvxI2c *i2c_address, const uint8_t byte)
+{
+  i2c_address->RVX_I2C_DATA_REG = byte;
+  i2c_address->RVX_I2C_COMMAND_REG = RVX_I2C_COMMAND_DATA;
+  i2c_address->RVX_I2C_STATUS_REG = RVX_I2C_STATUS_ACK_BITMASK | RVX_I2C_STATUS_RUN_BITMASK;
+  while (i2c_address->RVX_I2C_STATUS_REG & RVX_I2C_STATUS_RUN_BITMASK)
+    ;
+  return (i2c_address->RVX_I2C_STATUS_REG & RVX_I2C_STATUS_ACK_BITMASK) == 0;
+}
+
+/**
+ * @brief Receive a byte of data over the I2C bus.
+ *
+ * This function reads a byte from the I2C bus. The `send_ack` parameter determines whether an ACK or NACK is sent
+ * after receiving the byte.
+ *
+ * If `send_ack` is `true`, an ACK is sent to the peripheral device, indicating that the byte was received successfully
+ * and that the master wishes to continue receiving more data. If `send_ack` is `false`, a NACK is sent, indicating that
+ * the master does not wish to receive more data after this byte (e.g., because it is the last byte in the transaction).
+ *
+ * @note This is a low-level function. See `rvx_i2c_read()` for a higher-level function that handles a complete I2C read
+ * transaction, including sending the START condition, address byte, receiving data bytes, and sending the STOP
+ * condition.
+ *
+ * @param i2c_address Base address of the I2C controller.
+ * @param send_ack If true, an ACK is sent after receiving the byte; if false, a NACK is sent.
+ * @return The byte received from the I2C bus.
+ */
+static inline uint8_t rvx_i2c_receive_byte(RvxI2c *i2c_address, bool send_ack)
+{
+  i2c_address->RVX_I2C_DATA_REG = 0xff;
+  i2c_address->RVX_I2C_COMMAND_REG = RVX_I2C_COMMAND_DATA;
+  i2c_address->RVX_I2C_STATUS_REG = (send_ack ? 0 : RVX_I2C_STATUS_ACK_BITMASK) | RVX_I2C_STATUS_RUN_BITMASK;
+  while (i2c_address->RVX_I2C_STATUS_REG & RVX_I2C_STATUS_RUN_BITMASK)
+    ;
+  return i2c_address->RVX_I2C_DATA_REG;
+}
+
+/**
+ * @brief Write data to an I2C peripheral device.
+ *
+ * This function initiates an I2C write transaction to the specified peripheral device, sending the provided data
+ * buffer over the I2C bus.
+ *
+ * If the bus is busy, the function will return `false` without attempting the transaction.
+ *
+ * If the peripheral address is not acknowledged by the target device, or if any byte in the data buffer is not
+ * acknowledged during transmission, the function will return `false` and will ensure that a STOP condition is sent to
+ * release the bus.
+ *
+ * Example usage:
+ * ```c
+ * uint8_t data_to_send[] = {0x01, 0x02, 0x03}; // Example data buffer to send
+ * uint8_t peripheral_address = 0x52; // 7-bit I2C address of the target peripheral device
+ * bool success = rvx_i2c_write(RVX_I2C_ADDRESS, peripheral_address, data_to_send, sizeof(data_to_send));
+ * ```
+ *
+ * @param i2c_controller_address Base address of the I2C controller.
+ * @param i2c_peripheral_address 7-bit I2C address of the target peripheral device (without the R/W bit).
+ * @param data Pointer to the data buffer to be sent.
+ * @param length Number of bytes to be sent from the data buffer.
+ * @return true if the write operation was successful, false otherwise.
+ */
+static inline bool rvx_i2c_write(RvxI2c *i2c_controller_address, uint8_t i2c_peripheral_address, const uint8_t *data,
+                                 size_t length)
+{
+  if (!rvx_i2c_start(i2c_controller_address))
+    return false;
+  if (!rvx_i2c_send_byte(i2c_controller_address, (i2c_peripheral_address << 1) | 0))
   {
+    rvx_i2c_stop(i2c_controller_address);
     return false;
   }
-  for (size_t i = 0; i < size; i++)
+  for (size_t i = 0; i < length; i++)
   {
-    rvx_i2c_run_read(i2c_address, (i + 1 == size));
-    *buffer++ = rvx_i2c_get_data(i2c_address);
+    if (!rvx_i2c_send_byte(i2c_controller_address, data[i]))
+    {
+      rvx_i2c_stop(i2c_controller_address);
+      return false;
+    }
   }
+  rvx_i2c_stop(i2c_controller_address);
+  return true;
+}
+
+/**
+ * @brief Read data from an I2C peripheral device.
+ *
+ * This function initiates an I2C read transaction from the specified peripheral device, receiving data into the
+ * provided buffer over the I2C bus.
+ *
+ * If the bus is busy, the function will return `false` without attempting the transaction.
+ *
+ * If the peripheral address is not acknowledged by the target device, the function will return `false` and will ensure
+ * that a STOP condition is sent to release the bus.
+ *
+ * Example usage:
+ * ```c
+ * uint8_t data_buffer[3]; // Buffer to store received data
+ * uint8_t peripheral_address = 0x52; // 7-bit I2C address of the target peripheral device
+ * bool success = rvx_i2c_read(RVX_I2C_ADDRESS, peripheral_address, data_buffer, sizeof(data_buffer));
+ * ```
+ *
+ * @param i2c_controller_address Base address of the I2C controller.
+ * @param i2c_peripheral_address 7-bit I2C address of the target peripheral device (without the R/W bit).
+ * @param data Pointer to the buffer where received data will be stored.
+ * @param length Number of bytes to be read into the buffer.
+ * @return true if the read operation was successful, false otherwise.
+ */
+static inline bool rvx_i2c_read(RvxI2c *i2c_controller_address, uint8_t i2c_peripheral_address, uint8_t *data,
+                                size_t length)
+{
+  if (!rvx_i2c_start(i2c_controller_address))
+    return false;
+  if (!rvx_i2c_send_byte(i2c_controller_address, (i2c_peripheral_address << 1) | 1))
+  {
+    rvx_i2c_stop(i2c_controller_address);
+    return false;
+  }
+  for (size_t i = 0; i < length; i++)
+  {
+    data[i] = rvx_i2c_receive_byte(i2c_controller_address, i < length - 1);
+  }
+  rvx_i2c_stop(i2c_controller_address);
+  return true;
+}
+
+/**
+ * @brief Perform a combined I2C write followed by a read operation.
+ *
+ * This function initiates an I2C write transaction to the specified peripheral device, followed by a repeated start
+ * condition and an I2C read transaction. The write data is sent first, and then the read data is received into the
+ * provided buffer.
+ *
+ * If the bus is busy, the function will return `false` without attempting the transaction.
+ *
+ * If the peripheral address is not acknowledged by the target device during either the write or read phase, the
+ * function will return `false` and will ensure that a STOP condition is sent to release the bus.
+ *
+ * Example usage:
+ * ```c
+ * uint8_t write_data[] = {0x01}; // Data to write
+ * uint8_t read_data[6]; // Buffer to store received data
+ * uint8_t peripheral_address = 0x52; // 7-bit I2C address of the target peripheral device
+ * bool success = rvx_i2c_write_read(RVX_I2C_ADDRESS, peripheral_address, write_data, 1, read_data, 6);
+ * ```
+ *
+ * @param i2c_controller_address Base address of the I2C controller.
+ * @param i2c_peripheral_address 7-bit I2C address of the target peripheral device (without the R/W bit).
+ * @param write_data Pointer to the data buffer to be sent.
+ * @param write_length Number of bytes to be sent from the write data buffer.
+ * @param read_data Pointer to the buffer where received data will be stored.
+ * @param read_length Number of bytes to be read into the buffer.
+ * @return true if the write-read operation was successful, false otherwise.
+ */
+static inline bool rvx_i2c_write_read(RvxI2c *i2c_controller_address, uint8_t i2c_peripheral_address,
+                                      const uint8_t *write_data, size_t write_length, uint8_t *read_data,
+                                      size_t read_length)
+{
+  if (!rvx_i2c_start(i2c_controller_address))
+    return false;
+  if (!rvx_i2c_send_byte(i2c_controller_address, (i2c_peripheral_address << 1) | 0))
+  {
+    rvx_i2c_stop(i2c_controller_address);
+    return false;
+  }
+  for (size_t i = 0; i < write_length; i++)
+  {
+    if (!rvx_i2c_send_byte(i2c_controller_address, write_data[i]))
+    {
+      rvx_i2c_stop(i2c_controller_address);
+      return false;
+    }
+  }
+  rvx_i2c_repeated_start(i2c_controller_address);
+  if (!rvx_i2c_send_byte(i2c_controller_address, (i2c_peripheral_address << 1) | 1))
+  {
+    rvx_i2c_stop(i2c_controller_address);
+    return false;
+  }
+  for (size_t i = 0; i < read_length; i++)
+  {
+    read_data[i] = rvx_i2c_receive_byte(i2c_controller_address, i < read_length - 1);
+  }
+  rvx_i2c_stop(i2c_controller_address);
   return true;
 }
 
