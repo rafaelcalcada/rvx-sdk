@@ -55,16 +55,16 @@ if(NOT DEFINED RVX_HEAP_SIZE)
 endif()
 
 # Define INTERFACE library
-add_library(rvx_hal INTERFACE)
+add_library(rvx_sdk INTERFACE)
 
 # Include directories
-target_include_directories(rvx_hal
+target_include_directories(rvx_sdk
   INTERFACE
   ${CMAKE_CURRENT_LIST_DIR}/include
 )
 
 # Compiler options
-target_compile_options(rvx_hal
+target_compile_options(rvx_sdk
   INTERFACE
   -Wall
   -Wextra
@@ -80,10 +80,10 @@ target_compile_options(rvx_hal
 )
 
 # Linker options
-target_link_options(rvx_hal
+target_link_options(rvx_sdk
   INTERFACE
-  $<$<BOOL:${RVX_BOOTLOADER}>:-T${CMAKE_CURRENT_LIST_DIR}/linker/bootloader.ld>
-  $<$<NOT:$<BOOL:${RVX_BOOTLOADER}>>:-T${CMAKE_CURRENT_LIST_DIR}/linker/rvx.ld>
+  $<$<BOOL:${RVX_BOOTLOADER}>:-T${CMAKE_CURRENT_LIST_DIR}/ld/bootloader.ld>
+  $<$<NOT:$<BOOL:${RVX_BOOTLOADER}>>:-T${CMAKE_CURRENT_LIST_DIR}/ld/rvx.ld>
   -Wl,--gc-sections
   -mstrict-align
   -march=${RVX_ARCH}
@@ -97,12 +97,12 @@ target_link_options(rvx_hal
 
 # Add compile definition if RVX_BARE_METAL is defined
 if(DEFINED RVX_BARE_METAL AND RVX_BARE_METAL)
-  target_compile_definitions(rvx_hal INTERFACE RVX_BARE_METAL)
+  target_compile_definitions(rvx_sdk INTERFACE RVX_BARE_METAL)
 endif()
 
 # Provide startup file to be compiled by consuming targets (except for bootloader)
 if (NOT DEFINED RVX_BOOTLOADER OR NOT RVX_BOOTLOADER)
-  target_sources(rvx_hal INTERFACE ${CMAKE_CURRENT_LIST_DIR}/source/rvx_startup.S)
+  target_sources(rvx_sdk INTERFACE ${CMAKE_CURRENT_LIST_DIR}/startup/rvx_startup.S)
 endif()
 
 # Function to attach boot image generation to a target

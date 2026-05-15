@@ -1,23 +1,21 @@
 <p align="center"><img src="https://github.com/user-attachments/assets/cbb99dc9-c2e8-4234-bad7-8bbcfa434a30" width="100"/></p>
 
-## About the RVX HAL
+## About the RVX SDK
 
-RVX HAL is the Hardware Abstraction Layer for [RVX](https://github.com/rafaelcalcada/rvx), designed to make software development fast, easy, and maintainable. It provides drivers for RVX peripherals and simple access to processor registers — so you can focus on your application rather than low-level hardware details.
-
-Built with CMake and the RISC-V GNU Toolchain, RVX HAL is designed to be included in RVX application projects via CMake's FetchContent module, setting up compiler and linker settings for RVX and providing functions for generating boot images.
+RVX SDK is the Software Development Kit for [RVX](https://github.com/rafaelcalcada/rvx), designed to make developing software for RVX fast, easy, and maintainable. It provides a complete embedded software stack for RVX, including peripheral drivers, startup code, linker scripts, and build integration.
 
 ### Features
 
 - **Fast to start** – Minimal setup, immediate integration.
-- **Clean API** – Unified access to RVX peripherals and processor registers.
+- **Complete embedded stack** – Drivers, startup code, linker scripts, and CMake integration.
 - **Lightweight** – Works across projects with minimal overhead.
 
 ### Documentation
 
-For the complete API documentation, see the [RVX HAL Reference](https://rafaelcalcada.github.io/rvx/hal).
+For instructions on how to develop applications using the RVX SDK, see the [RVX Developer Guide](https://rafaelcalcada.github.io/rvx/devguide).
 
-For instructions on how to develop applications using the RVX HAL, see the [RVX Developer Guide](https://rafaelcalcada.github.io/rvx/devguide).
+For the complete API documentation, see the [RVX API Reference](https://rafaelcalcada.github.io/rvx/api).
 
 ### License
 
-RVX HAL is distributed under the [MIT License](LICENSE).
+RVX SDK is distributed under the [MIT License](LICENSE).
