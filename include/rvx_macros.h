@@ -18,9 +18,6 @@
 /// Default base address of RVX Timer controller.
 #define RVX_TIMER_ADDRESS (RvxTimer *)0x40001000U
 
-/// Default base address of RVX GPIO controller.
-#define RVX_GPIO_ADDRESS (RvxGpio *)0x40002000U
-
 /// Default base address of RVX SPI controller.
 #define RVX_SPI_ADDRESS (RvxSpi *)0x40003000U
 

@@ -145,9 +145,10 @@ static inline void rvx_spi_deassert_cs(RvxSpi *spi_address)
  * rvx_spi_deassert_cs(RVX_SPI_ADDRESS);
  *
  * // Transmit 0xCD to another subordinate device using a GPIO-controlled CS line.
- * rvx_gpio_set_low(RVX_GPIO_ADDRESS, 0); // Assert GPIO-controlled CS for the second device
+ * RvxGpioRegs *gpio_controller = (RvxGpioRegs *)RVX_GPIO_CONTROLLER_ADDRESS;
+ * rvx_gpio_pin_write(gpio_controller, 0, RVX_GPIO_LOW); // Assert GPIO-controlled CS line for the second device
  * uint8_t received_2 = rvx_spi_transfer(RVX_SPI_ADDRESS, 0xCD);
- * rvx_gpio_set_high(RVX_GPIO_ADDRESS, 0); // Deassert GPIO-controlled CS for the second device
+ * rvx_gpio_pin_write(gpio_controller, 0, RVX_GPIO_HIGH); // Deassert GPIO-controlled CS line for the second device
  * ```
  *
  * @param spi_address Base address of the SPI controller.
