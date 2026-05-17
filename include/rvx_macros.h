@@ -12,9 +12,6 @@
 #include <stddef.h>  // for size_t
 #include <stdint.h>  // for uint32_t, uint16_t, uint8_t types
 
-/// Default base address of RVX SPI controller.
-#define RVX_SPI_ADDRESS (RvxSpi *)0x40003000U
-
 /// Default base address of RVX I2C controller.
 #define RVX_I2C_ADDRESS (RvxI2c *)0x40004000U
 
