@@ -55,14 +55,14 @@ rvx_trap_vector:
   j .
   j .
   j .
-  j rvx_trap_handler_fast_0_irq_m       // Fast Interrupt 0 from M-mode
-  j rvx_trap_handler_fast_1_irq_m       // Fast Interrupt 1 from M-mode
-  j rvx_trap_handler_fast_2_irq_m       // Fast Interrupt 2 from M-mode
-  j rvx_trap_handler_fast_3_irq_m       // Fast Interrupt 3 from M-mode
-  j rvx_trap_handler_fast_4_irq_m       // Fast Interrupt 4 from M-mode
-  j rvx_trap_handler_fast_5_irq_m       // Fast Interrupt 5 from M-mode
-  j rvx_trap_handler_fast_6_irq_m       // Fast Interrupt 6 from M-mode
-  j rvx_trap_handler_fast_7_irq_m       // Fast Interrupt 7 from M-mode
+  j rvx_trap_handler_fast_0_m         // Fast Interrupt 0 from M-mode
+  j rvx_trap_handler_fast_1_m         // Fast Interrupt 1 from M-mode
+  j rvx_trap_handler_fast_2_m         // Fast Interrupt 2 from M-mode
+  j rvx_trap_handler_fast_3_m         // Fast Interrupt 3 from M-mode
+  j rvx_trap_handler_fast_4_m         // Fast Interrupt 4 from M-mode
+  j rvx_trap_handler_fast_5_m         // Fast Interrupt 5 from M-mode
+  j rvx_trap_handler_fast_6_m         // Fast Interrupt 6 from M-mode
+  j rvx_trap_handler_fast_7_m         // Fast Interrupt 7 from M-mode
   .option pop
 
 // Default trap handler: simply return from trap
@@ -75,27 +75,27 @@ rvx_trap_handler_default:
 .weak rvx_trap_handler_external_m
 .weak rvx_trap_handler_uart_m
 .weak rvx_trap_handler_i2c_m
-.weak rvx_trap_handler_fast_0_irq_m
-.weak rvx_trap_handler_fast_1_irq_m
-.weak rvx_trap_handler_fast_2_irq_m
-.weak rvx_trap_handler_fast_3_irq_m
-.weak rvx_trap_handler_fast_4_irq_m
-.weak rvx_trap_handler_fast_5_irq_m
-.weak rvx_trap_handler_fast_6_irq_m
-.weak rvx_trap_handler_fast_7_irq_m
+.weak rvx_trap_handler_fast_0_m
+.weak rvx_trap_handler_fast_1_m
+.weak rvx_trap_handler_fast_2_m
+.weak rvx_trap_handler_fast_3_m
+.weak rvx_trap_handler_fast_4_m
+.weak rvx_trap_handler_fast_5_m
+.weak rvx_trap_handler_fast_6_m
+.weak rvx_trap_handler_fast_7_m
 .set rvx_trap_handler_software_m, rvx_trap_handler_default
 .set rvx_trap_handler_timer_m, rvx_trap_handler_default
 .set rvx_trap_handler_external_m, rvx_trap_handler_default
 .set rvx_trap_handler_uart_m, rvx_trap_handler_default
 .set rvx_trap_handler_i2c_m, rvx_trap_handler_default
-.set rvx_trap_handler_fast_0_irq_m, rvx_trap_handler_default
-.set rvx_trap_handler_fast_1_irq_m, rvx_trap_handler_default
-.set rvx_trap_handler_fast_2_irq_m, rvx_trap_handler_default
-.set rvx_trap_handler_fast_3_irq_m, rvx_trap_handler_default
-.set rvx_trap_handler_fast_4_irq_m, rvx_trap_handler_default
-.set rvx_trap_handler_fast_5_irq_m, rvx_trap_handler_default
-.set rvx_trap_handler_fast_6_irq_m, rvx_trap_handler_default
-.set rvx_trap_handler_fast_7_irq_m, rvx_trap_handler_default
+.set rvx_trap_handler_fast_0_m, rvx_trap_handler_default
+.set rvx_trap_handler_fast_1_m, rvx_trap_handler_default
+.set rvx_trap_handler_fast_2_m, rvx_trap_handler_default
+.set rvx_trap_handler_fast_3_m, rvx_trap_handler_default
+.set rvx_trap_handler_fast_4_m, rvx_trap_handler_default
+.set rvx_trap_handler_fast_5_m, rvx_trap_handler_default
+.set rvx_trap_handler_fast_6_m, rvx_trap_handler_default
+.set rvx_trap_handler_fast_7_m, rvx_trap_handler_default
 
 // Bootloader symbol for GDB debugging
 // Any address from 0x00000000 to 0x00000FFF will be shown
