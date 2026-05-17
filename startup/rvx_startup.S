@@ -47,6 +47,14 @@ rvx_trap_vector:
   j .
   j .
   j .
+  j rvx_trap_handler_uart_m           // RVX UART Interrupt from M-mode
+  j rvx_trap_handler_i2c_m            // RVX I2C Interrupt from M-mode
+  j .
+  j .
+  j .
+  j .
+  j .
+  j .
   j rvx_trap_handler_fast_irq_0       // Fast Interrupt 0
   j rvx_trap_handler_fast_irq_1       // Fast Interrupt 1
   j rvx_trap_handler_fast_irq_2       // Fast Interrupt 2
@@ -55,14 +63,6 @@ rvx_trap_vector:
   j rvx_trap_handler_fast_irq_5       // Fast Interrupt 5
   j rvx_trap_handler_fast_irq_6       // Fast Interrupt 6
   j rvx_trap_handler_fast_irq_7       // Fast Interrupt 7
-  j rvx_trap_handler_fast_irq_8       // Fast Interrupt 8
-  j rvx_trap_handler_fast_irq_9       // Fast Interrupt 9
-  j rvx_trap_handler_fast_irq_10      // Fast Interrupt 10
-  j rvx_trap_handler_fast_irq_11      // Fast Interrupt 11
-  j rvx_trap_handler_fast_irq_12      // Fast Interrupt 12
-  j rvx_trap_handler_fast_irq_13      // Fast Interrupt 13
-  j rvx_trap_handler_fast_irq_14      // Fast Interrupt 14
-  j rvx_trap_handler_fast_irq_15      // Fast Interrupt 15
   .option pop
 
 // Default trap handler: simply return from trap
