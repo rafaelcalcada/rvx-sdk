@@ -2,40 +2,40 @@
 /* Copyright (c) 2020-2026 RVX Project Contributors */
 
 OUTPUT_ARCH("riscv")
-ENTRY(rvx_startup)
+ENTRY(__rvx_startup)
 
 MEMORY
 {
   BOOTLOADER (rx) : ORIGIN = 0x00000000, LENGTH = 4K
-  RVX_TCM (wx)    : ORIGIN = 0x00001000, LENGTH = __memory_size
+  RVX_RAM (wx)    : ORIGIN = 0x00001000, LENGTH = __rvx_ram_size
 }
 
 SECTIONS
 {
 
-  /* Bootloader symbol for GDB debugging - NOLOAD to avoid LMA conflicts */
-  .rvx_bootloader 0x00000000 (NOLOAD) :
+  __rvx_min_free_space = DEFINED(__rvx_min_free_space) ? __rvx_min_free_space : 0;
+
+  .rvx_bootloader ORIGIN(BOOTLOADER) : ALIGN(4)
   {
     KEEP(*(.rvx_bootloader))
     . = 0x1000;
   }
 
-  __stack_size = DEFINED(__stack_size) ? __stack_size : 0;
-  __heap_size = DEFINED(__heap_size) ? __heap_size : 0;
-
   .boot_header : ALIGN(4)
   {
-    LONG(0x52563332);               /* Magic number: "RV32" (0x52563332) */
-    LONG(__boot_image_size);        /* Boot image size in bytes */
-    LONG(rvx_startup);              /* Entry point address */
-    LONG(0x52565834)                /* Magic number: "RVX4" */
-  } > RVX_TCM
+    LONG(0x52565830)                /* RVX magic number: "RVX0" */
+    LONG(__rvx_startup);            /* Entry point address */    
+    LONG(__rvx_boot_image_size);    /* Boot image size in bytes */    
+    LONG(0x52563332);               /* RISC-V magic number: "RV32" */
+  } > RVX_RAM
 
   .text :
   {
     *(.init.rvx_startup)
     *(.init.rvx_trap_vector)
-    *(.text.rvx_trap_handler_*)
+    *(.text.rvx_irq_handler_*)
+    *(.text.rvx_irq_handler)
+    *(.text.rvx_exception_handler)
     *(SORT_NONE(.init))
     *(SORT_NONE(.fini))
 
@@ -59,7 +59,7 @@ SECTIONS
 
     . = ALIGN(4);
     *(.srodata*)
-  } > RVX_TCM
+  } > RVX_RAM
 
   .data : ALIGN(4)
   {
@@ -72,7 +72,7 @@ SECTIONS
     *(.sdata*)
     *(.gnu.linkonce.s.*)
     __sdata_end = .;
-  } > RVX_TCM
+  } > RVX_RAM
 
   .bss (NOLOAD) : ALIGN(4)
   {
@@ -94,17 +94,10 @@ SECTIONS
 
 }
 
-PROVIDE( __stack_limit              = ORIGIN(RVX_TCM) + LENGTH(RVX_TCM) - __stack_size);
-PROVIDE( __stack_top                = ORIGIN(RVX_TCM) + LENGTH(RVX_TCM));
+PROVIDE( __stack_top                 = ORIGIN(RVX_RAM) + LENGTH(RVX_RAM));
+PROVIDE( __heap_start                = ALIGN(ADDR(.bss) + SIZEOF(.bss), 8));
+PROVIDE( __free_ram                  = __stack_top - __heap_start);
+PROVIDE( __rvx_boot_image_size       = ADDR(.data) + SIZEOF(.data) - ORIGIN(RVX_RAM));
+PROVIDE( __freertos_irq_stack_top    = __stack_top);
 
-PROVIDE( _end = ALIGN(ADDR(.bss) + SIZEOF(.bss), 8));
-PROVIDE( end  = _end);
-
-PROVIDE( __boot_image_size = ADDR(.data) + SIZEOF(.data) - ORIGIN(RVX_TCM));
-
-PROVIDE( __heap_start = _end);
-PROVIDE( __heap_end   = __heap_start + __heap_size);
-
-ASSERT( __heap_end <= __stack_limit, "ERROR: Program won't fit in RVX tightly coupled memory. Please increase memory size or reduce program, heap or stack sizes.");
-
-PROVIDE( __freertos_irq_stack_top   = __stack_top);
+ASSERT(__free_ram >= __rvx_min_free_space, "ERROR: Program does not fit in RVX RAM: minimum free memory space requirement cannot be satisfied. Reduce program size or increase RVX RAM size.");
