@@ -1,0 +1,56 @@
+@PACKAGE_INIT@
+
+if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+	message(FATAL_ERROR "RVX requires a CMake toolchain file.\n"
+                      "The toolchain file is used to configure the RISC-V toolchain for cross-compilation for RVX.\n"
+                      "Please clean the build directory and call CMake again with -DCMAKE_TOOLCHAIN_FILE=<path-to-rvx-toolchain.cmake>")
+endif()
+
+include("${CMAKE_CURRENT_LIST_DIR}/RVXTargets.cmake")
+
+set(RVX_INCLUDE_DIR "${PACKAGE_PREFIX_DIR}/@CMAKE_INSTALL_INCLUDEDIR@")
+set(RVX_STARTUP_DIR "${PACKAGE_PREFIX_DIR}/@CMAKE_INSTALL_DATADIR@/rvx/startup")
+set(RVX_LINKER_DIR "${PACKAGE_PREFIX_DIR}/@CMAKE_INSTALL_DATADIR@/rvx/ld")
+
+if(NOT DEFINED RVX_ARCH)
+  if(DEFINED RVX_ENABLE_ZMMUL AND RVX_ENABLE_ZMMUL)
+    set(RVX_ARCH "rv32i_zicsr_zmmul")
+    message(STATUS "Selected RISC-V architecture for RVX: ${RVX_ARCH}")
+    message(STATUS "Zmmul extension enabled.")
+  else()
+    set(RVX_ARCH "rv32i_zicsr")
+    message(STATUS "Selected RISC-V architecture for RVX: ${RVX_ARCH} (default)")
+    message(STATUS "Zmmul extension is disabled (default).")
+  endif()
+endif()
+
+if(NOT DEFINED RVX_RAM_SIZE_IN_BYTES)
+	set(RVX_RAM_SIZE_IN_BYTES 8192)
+  message(STATUS "Using RVX_RAM_SIZE_IN_BYTES: ${RVX_RAM_SIZE_IN_BYTES} bytes (default)")
+else()
+  message(STATUS "Using RVX_RAM_SIZE_IN_BYTES: ${RVX_RAM_SIZE_IN_BYTES} bytes")
+endif()
+
+if(NOT DEFINED RVX_MIN_FREE_SPACE_IN_BYTES)
+	set(RVX_MIN_FREE_SPACE_IN_BYTES 2048)
+  message(STATUS "Using RVX_MIN_FREE_SPACE_IN_BYTES: ${RVX_MIN_FREE_SPACE_IN_BYTES} bytes (default)")
+else()
+  message(STATUS "Using RVX_MIN_FREE_SPACE_IN_BYTES: ${RVX_MIN_FREE_SPACE_IN_BYTES} bytes")
+endif()
+
+include("${CMAKE_CURRENT_LIST_DIR}/RVXBootImage.cmake")
+
+set_property(TARGET rvx_sdk APPEND PROPERTY INTERFACE_COMPILE_OPTIONS
+  "-march=${RVX_ARCH}"
+)
+
+set_property(TARGET rvx_sdk APPEND PROPERTY INTERFACE_LINK_OPTIONS
+  "-march=${RVX_ARCH}"
+	"-Wl,--defsym=__rvx_ram_size=${RVX_RAM_SIZE_IN_BYTES}"
+  "-Wl,--defsym=__rvx_min_free_space=${RVX_MIN_FREE_SPACE_IN_BYTES}"
+	"-T${RVX_LINKER_DIR}/rvx.ld"
+)
+
+set_property(TARGET rvx_sdk APPEND PROPERTY INTERFACE_SOURCES
+	"${RVX_STARTUP_DIR}/rvx_startup.S"
+)

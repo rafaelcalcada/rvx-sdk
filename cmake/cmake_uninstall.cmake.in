@@ -1,0 +1,66 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2020-2026 RVX Project Contributors
+
+set(_build_manifest "@CMAKE_CURRENT_BINARY_DIR@/install_manifest.txt")
+set(_installed_manifest "${CMAKE_CURRENT_LIST_DIR}/RVXInstallManifest.txt")
+
+if(EXISTS "${_build_manifest}")
+  set(_manifest "${_build_manifest}")
+  set(_using_installed_manifest FALSE)
+elseif(EXISTS "${_installed_manifest}")
+  set(_manifest "${_installed_manifest}")
+  set(_using_installed_manifest TRUE)
+else()
+  message(FATAL_ERROR "Cannot find uninstall manifest. Checked:\n  ${_build_manifest}\n  ${_installed_manifest}")
+endif()
+
+file(READ "${_manifest}" files)
+string(REPLACE "\n" ";" files "${files}")
+
+if(NOT EXISTS "${_installed_manifest}")
+  foreach(file ${files})
+    if(file MATCHES [[/cmake/RVX/cmake_uninstall\.cmake$]])
+      get_filename_component(_installed_manifest_dir "${file}" DIRECTORY)
+      set(_installed_manifest "${_installed_manifest_dir}/RVXInstallManifest.txt")
+      break()
+    endif()
+  endforeach()
+endif()
+
+foreach(file ${files})
+  if(file STREQUAL "")
+    continue()
+  endif()
+
+  set(installed_file "$ENV{DESTDIR}${file}")
+
+  if(EXISTS "${installed_file}" OR IS_SYMLINK "${installed_file}")
+    message(STATUS "Uninstalling: ${installed_file}")
+    execute_process(
+      COMMAND "@CMAKE_COMMAND@" -E rm -f "${installed_file}"
+      RESULT_VARIABLE rm_result
+      OUTPUT_QUIET
+      ERROR_VARIABLE rm_error
+    )
+    if(NOT rm_result EQUAL 0)
+      message(FATAL_ERROR "Failed to remove ${installed_file}: ${rm_error}")
+    endif()
+  else()
+    message(STATUS "Already removed: ${installed_file}")
+  endif()
+endforeach()
+
+if(EXISTS "${_installed_manifest}")
+  message(STATUS "Uninstalling: ${_installed_manifest}")
+  execute_process(
+    COMMAND "@CMAKE_COMMAND@" -E rm -f "${_installed_manifest}"
+    RESULT_VARIABLE rm_manifest_result
+    OUTPUT_QUIET
+    ERROR_VARIABLE rm_manifest_error
+  )
+  if(NOT rm_manifest_result EQUAL 0)
+    message(FATAL_ERROR "Failed to remove ${_installed_manifest}: ${rm_manifest_error}")
+  endif()
+endif()
+
+message(STATUS "RVX SDK was successfully uninstalled.")
