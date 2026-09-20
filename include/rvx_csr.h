@@ -151,28 +151,29 @@
 
 /// @name CSR Addresses
 /// @{
-#define RVX_CSR_CYCLEL_ADDR 0xC00    ///< Address of the U-mode Cycle CSR (lower 32 bits).
-#define RVX_CSR_TIMEL_ADDR 0xC01     ///< Address of the U-mode Time CSR (lower 32 bits).
-#define RVX_CSR_INSTRETL_ADDR 0xC02  ///< Address of the U-mode Instructions Retired CSR (lower 32 bits).
-#define RVX_CSR_CYCLEH_ADDR 0xC80    ///< Address of the U-mode Cycle CSR (upper 32 bits).
-#define RVX_CSR_TIMEH_ADDR 0xC81     ///< Address of the U-mode Time CSR (upper 32 bits).
-#define RVX_CSR_INSTRETH_ADDR 0xC82  ///< Address of the U-mode Instructions Retired CSR (upper 32 bits).
-#define RVX_CSR_MARCHID_ADDR 0xF12   ///< Address of the M-mode Architecture ID CSR.
-#define RVX_CSR_MIMPID_ADDR 0xF13    ///< Address of the M-mode Implementation ID CSR.
-#define RVX_CSR_MSTATUSL_ADDR 0x300  ///< Address of the M-mode Status CSR (lower 32 bits).
-#define RVX_CSR_MISA_ADDR 0x301      ///< Address of the M-mode ISA CSR.
-#define RVX_CSR_MIE_ADDR 0x304       ///< Address of the M-mode Interrupt Enable CSR.
-#define RVX_CSR_MTVEC_ADDR 0x305     ///< Address of the M-mode Trap-Vector CSR.
-#define RVX_CSR_MSTATUSH_ADDR 0x310  ///< Address of the M-mode Status CSR (upper 32 bits).
-#define RVX_CSR_MSCRATCH_ADDR 0x340  ///< Address of the M-mode Scratch CSR.
-#define RVX_CSR_MEPC_ADDR 0x341      ///< Address of the M-mode Exception Program Counter CSR.
-#define RVX_CSR_MCAUSE_ADDR 0x342    ///< Address of the M-mode Trap Cause CSR.
-#define RVX_CSR_MTVAL_ADDR 0x343     ///< Address of the M-mode Trap Value CSR.
-#define RVX_CSR_MIP_ADDR 0x344       ///< Address of the M-mode Interrupt Pending CSR.
-#define RVX_CSR_MCYCLEL_ADDR 0xB00   ///< Address of the M-mode Cycle CSR (lower 32 bits).
-#define RVX_CSR_MINSTRETL_ADDR 0xB02 ///< Address of the M-mode Instructions Retired CSR (lower 32 bits).
-#define RVX_CSR_MCYCLEH_ADDR 0xB80   ///< Address of the M-mode Cycle CSR (upper 32 bits).
-#define RVX_CSR_MINSTRETH_ADDR 0xB82 ///< Address of the M-mode Instructions Retired CSR (upper 32 bits).
+#define RVX_CSR_CYCLEL_ADDR 0xC00          ///< Address of the U-mode Cycle CSR (lower 32 bits).
+#define RVX_CSR_TIMEL_ADDR 0xC01           ///< Address of the U-mode Time CSR (lower 32 bits).
+#define RVX_CSR_INSTRETL_ADDR 0xC02        ///< Address of the U-mode Instructions Retired CSR (lower 32 bits).
+#define RVX_CSR_CYCLEH_ADDR 0xC80          ///< Address of the U-mode Cycle CSR (upper 32 bits).
+#define RVX_CSR_TIMEH_ADDR 0xC81           ///< Address of the U-mode Time CSR (upper 32 bits).
+#define RVX_CSR_INSTRETH_ADDR 0xC82        ///< Address of the U-mode Instructions Retired CSR (upper 32 bits).
+#define RVX_CSR_MARCHID_ADDR 0xF12         ///< Address of the M-mode Architecture ID CSR.
+#define RVX_CSR_MIMPID_ADDR 0xF13          ///< Address of the M-mode Implementation ID CSR.
+#define RVX_CSR_MSTATUSL_ADDR 0x300        ///< Address of the M-mode Status CSR (lower 32 bits).
+#define RVX_CSR_MISA_ADDR 0x301            ///< Address of the M-mode ISA CSR.
+#define RVX_CSR_MIE_ADDR 0x304             ///< Address of the M-mode Interrupt Enable CSR.
+#define RVX_CSR_MTVEC_ADDR 0x305           ///< Address of the M-mode Trap-Vector CSR.
+#define RVX_CSR_MSTATUSH_ADDR 0x310        ///< Address of the M-mode Status CSR (upper 32 bits).
+#define RVX_CSR_MSCRATCH_ADDR 0x340        ///< Address of the M-mode Scratch CSR.
+#define RVX_CSR_MEPC_ADDR 0x341            ///< Address of the M-mode Exception Program Counter CSR.
+#define RVX_CSR_MCAUSE_ADDR 0x342          ///< Address of the M-mode Trap Cause CSR.
+#define RVX_CSR_MTVAL_ADDR 0x343           ///< Address of the M-mode Trap Value CSR.
+#define RVX_CSR_MIP_ADDR 0x344             ///< Address of the M-mode Interrupt Pending CSR.
+#define RVX_CSR_MCYCLEL_ADDR 0xB00         ///< Address of the M-mode Cycle CSR (lower 32 bits).
+#define RVX_CSR_MINSTRETL_ADDR 0xB02       ///< Address of the M-mode Instructions Retired CSR (lower 32 bits).
+#define RVX_CSR_MCYCLEH_ADDR 0xB80         ///< Address of the M-mode Cycle CSR (upper 32 bits).
+#define RVX_CSR_MINSTRETH_ADDR 0xB82       ///< Address of the M-mode Instructions Retired CSR (upper 32 bits).
+#define RVX_CSR_CLOCK_FREQUENCY_ADDR 0x7C0 ///< Address of the RVX Clock Frequency CSR.
 /// @}
 
 /// @name Bitmasks for CSR Fields
