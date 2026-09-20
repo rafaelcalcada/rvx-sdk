@@ -44,13 +44,4 @@
 /// Read a specific bit from a Memory-Mapped IO register.
 #define RVX_READ_BIT(register, bit_index) (((register) >> (bit_index)) & 1U)
 
-/// @name Bit masks for I2C Status register.
-/// @{
-#define RVX_I2C_STATUS_RUN_BITMASK (1U << 0U) ///< Bitmask for the I2C: Status register RUN bit.
-#define RVX_I2C_STATUS_ACK_BITMASK (1U << 1U) ///< Bitmask for the I2C: Status register ACK bit.
-#define RVX_I2C_STATUS_IRQ_BITMASK (1U << 2U) ///< Bitmask for the I2C: Status register IRQ bit.
-#define RVX_I2C_STATUS_SDA_BITMASK (1U << 3U) ///< Bitmask for the I2C: Status register SDA bit.
-#define RVX_I2C_STATUS_SCL_BITMASK (1U << 4U) ///< Bitmask for the I2C: Status register SCL bit.
-/// @}
-
 #endif // __RVX_MACROS_H

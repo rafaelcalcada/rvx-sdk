@@ -13,6 +13,15 @@
 /// Base address of the I2C controller registers.
 #define RVX_I2C_CONTROLLER_ADDRESS 0x40004000U
 
+/// @name Bit masks for I2C Status register.
+/// @{
+#define RVX_I2C_STATUS_RUN_BITMASK (1U << 0U) ///< Bitmask for the RUN bit in the I2C STATUS register.
+#define RVX_I2C_STATUS_ACK_BITMASK (1U << 1U) ///< Bitmask for the ACK bit in the I2C STATUS register.
+#define RVX_I2C_STATUS_IRQ_BITMASK (1U << 2U) ///< Bitmask for the IRQ bit in the I2C STATUS register.
+#define RVX_I2C_STATUS_SDA_BITMASK (1U << 3U) ///< Bitmask for the SDA bit in the I2C STATUS register.
+#define RVX_I2C_STATUS_SCL_BITMASK (1U << 4U) ///< Bitmask for the SCL bit in the I2C STATUS register.
+/// @}
+
 /// The I2C command.
 typedef enum RvxI2cCommand
 {
