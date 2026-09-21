@@ -114,14 +114,35 @@ rvx_irq_handler:
 .Lirq_counter_overflow:
   j rvx_irq_handler_counter_overflow
 
+.weak rvx_irq_handler_external_m
+rvx_irq_handler_external_m:
+  li t0, 0x40005000
+  lw t1, 72(t0)
+  andi t2, t1, 16
+  beqz t2, .Lirq_external_m_return
+  andi t1, t1, 15
+  beqz t1, .Lirq_external_m_uart0
+  li t2, 1
+  beq t1, t2, .Lirq_external_m_i2c0
+  call rvx_unimplemented_handler
+  j .Lirq_external_m_return
+.Lirq_external_m_uart0:
+  call rvx_irq_handler_uart0
+  j .Lirq_external_m_return
+.Lirq_external_m_i2c0:
+  call rvx_irq_handler_i2c0
+.Lirq_external_m_return:
+  mret
+
 .weak rvx_irq_handler_software_s
 .weak rvx_irq_handler_software_m
 .weak rvx_irq_handler_timer_s
 .weak rvx_irq_handler_timer_m
 .weak rvx_irq_handler_external_s
-.weak rvx_irq_handler_external_m // Default implementation provided by rvx_plic.h, if included
 .weak rvx_irq_handler_counter_overflow
 .weak rvx_exception_handler
+.weak rvx_irq_handler_uart0
+.weak rvx_irq_handler_i2c0
 .set rvx_irq_handler_software_s, rvx_unimplemented_handler
 .set rvx_irq_handler_software_m, rvx_unimplemented_handler
 .set rvx_irq_handler_timer_s, rvx_unimplemented_handler
@@ -129,3 +150,5 @@ rvx_irq_handler:
 .set rvx_irq_handler_external_s, rvx_unimplemented_handler
 .set rvx_irq_handler_counter_overflow, rvx_unimplemented_handler
 .set rvx_exception_handler, rvx_unimplemented_handler
+.set rvx_irq_handler_uart0, rvx_unimplemented_handler
+.set rvx_irq_handler_i2c0, rvx_unimplemented_handler
