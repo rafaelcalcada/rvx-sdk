@@ -51,19 +51,19 @@ configure_file(
 )
 
 configure_file(
-  ${CMAKE_CURRENT_LIST_DIR}/cmake/cmake_uninstall.cmake.in
-  ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake
+  ${CMAKE_CURRENT_LIST_DIR}/cmake/templates/RVXUninstall.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/RVXUninstall.cmake
   @ONLY
 )
 
 configure_file(
-  ${CMAKE_CURRENT_LIST_DIR}/cmake/write_install_manifest.cmake.in
-  ${CMAKE_CURRENT_BINARY_DIR}/write_install_manifest.cmake
+  ${CMAKE_CURRENT_LIST_DIR}/cmake/templates/RVXWriteInstallManifest.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/RVXWriteInstallManifest.cmake
   @ONLY
 )
 
 add_custom_target(uninstall
-  COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake
+  COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/RVXUninstall.cmake
 )
 
 install(TARGETS rvx_sdk EXPORT RVXTargets)
@@ -74,12 +74,13 @@ install(DIRECTORY ld/ DESTINATION ${CMAKE_INSTALL_DATADIR}/rvx/ld)
 
 install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/RVXBootImage.cmake
-  ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake
+  ${CMAKE_CURRENT_BINARY_DIR}/RVXUninstall.cmake
+  ${CMAKE_CURRENT_LIST_DIR}/cmake/RVXToolchain.cmake
   DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/RVX
 )
 
 configure_package_config_file(
-  ${CMAKE_CURRENT_LIST_DIR}/cmake/RVXConfig.cmake.in
+  ${CMAKE_CURRENT_LIST_DIR}/cmake/templates/RVXConfig.cmake.in
   ${CMAKE_CURRENT_BINARY_DIR}/RVXConfig.cmake
   INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/RVX
 )
@@ -102,7 +103,7 @@ install(FILES
 
 # Persist the install manifest in the install tree so uninstall can work
 # even after the build directory is deleted.
-install(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/write_install_manifest.cmake)
+install(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/RVXWriteInstallManifest.cmake)
 
 export(EXPORT RVXTargets
   FILE ${CMAKE_CURRENT_BINARY_DIR}/RVXTargets.cmake

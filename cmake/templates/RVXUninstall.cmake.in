@@ -19,7 +19,7 @@ string(REPLACE "\n" ";" files "${files}")
 
 if(NOT EXISTS "${_installed_manifest}")
   foreach(file ${files})
-    if(file MATCHES [[/cmake/RVX/cmake_uninstall\.cmake$]])
+    if(file MATCHES [[/cmake/RVX/RVXUninstall\.cmake$]])
       get_filename_component(_installed_manifest_dir "${file}" DIRECTORY)
       set(_installed_manifest "${_installed_manifest_dir}/RVXInstallManifest.txt")
       break()
