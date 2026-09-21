@@ -19,6 +19,9 @@
 /// Maximum priority value that can be assigned to an interrupt source.
 #define RVX_PLIC_MAX_PRIORITY 15U
 
+/// Bit index of the "interrupt pending" flag within the PLIC claim register.
+#define RVX_PLIC_CLAIM_PENDING_BIT 4U
+
 /// Provide access to the PLIC controller registers.
 typedef struct RVX_ALIGNED RvxPlicRegs
 {
@@ -115,9 +118,6 @@ static inline bool rvx_plic_is_source_enabled(RvxPlicRegs *plic_controller, cons
 {
   return RVX_READ_BIT(plic_controller->RVX_PLIC_ENABLE_REG, source_id);
 }
-
-/// Bit index of the "interrupt pending" flag within the PLIC claim register.
-#define RVX_PLIC_CLAIM_PENDING_BIT 4U
 
 /**
  * @brief Identify the interrupt source that won PLIC arbitration.
