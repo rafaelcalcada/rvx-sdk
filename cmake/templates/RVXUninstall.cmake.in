@@ -1,66 +1,68 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2020-2026 RVX Project Contributors
 
-set(_build_manifest "@CMAKE_CURRENT_BINARY_DIR@/install_manifest.txt")
-set(_installed_manifest "${CMAKE_CURRENT_LIST_DIR}/RVXInstallManifest.txt")
+set(_install_prefix "@CMAKE_INSTALL_PREFIX@")
+set(_installed_manifest "${_install_prefix}/RVXInstallManifest.txt")
 
-if(EXISTS "${_build_manifest}")
-  set(_manifest "${_build_manifest}")
-  set(_using_installed_manifest FALSE)
-elseif(EXISTS "${_installed_manifest}")
-  set(_manifest "${_installed_manifest}")
-  set(_using_installed_manifest TRUE)
-else()
-  message(FATAL_ERROR "Cannot find uninstall manifest. Checked:\n  ${_build_manifest}\n  ${_installed_manifest}")
-endif()
-
-file(READ "${_manifest}" files)
-string(REPLACE "\n" ";" files "${files}")
-
-if(NOT EXISTS "${_installed_manifest}")
-  foreach(file ${files})
-    if(file MATCHES [[/cmake/RVX/RVXUninstall\.cmake$]])
-      get_filename_component(_installed_manifest_dir "${file}" DIRECTORY)
-      set(_installed_manifest "${_installed_manifest_dir}/RVXInstallManifest.txt")
+if(NOT EXISTS "${_installed_manifest}" AND EXISTS "@CMAKE_CURRENT_BINARY_DIR@/install_manifest.txt")
+  file(STRINGS "@CMAKE_CURRENT_BINARY_DIR@/install_manifest.txt" _build_installed_files)
+  foreach(_build_installed_file ${_build_installed_files})
+    if(_build_installed_file MATCHES "^(.*)/cmake/RVXUninstall\\.cmake$")
+      set(_install_prefix "${CMAKE_MATCH_1}")
+      set(_installed_manifest "${_install_prefix}/RVXInstallManifest.txt")
       break()
     endif()
   endforeach()
 endif()
 
-foreach(file ${files})
-  if(file STREQUAL "")
+if(NOT EXISTS "${_installed_manifest}")
+  message(FATAL_ERROR
+    "RVX SDK install manifest not found. The RVX SDK may have already been uninstalled.\n"
+    "Checked: ${_installed_manifest}"
+  )
+endif()
+
+message(STATUS "Uninstalling RVX SDK from ${_install_prefix}...")
+
+file(STRINGS "${_installed_manifest}" _installed_files)
+foreach(_installed_file ${_installed_files})
+  if(_installed_file STREQUAL "")
     continue()
   endif()
 
-  set(installed_file "$ENV{DESTDIR}${file}")
-
-  if(EXISTS "${installed_file}" OR IS_SYMLINK "${installed_file}")
-    message(STATUS "Uninstalling: ${installed_file}")
-    execute_process(
-      COMMAND "@CMAKE_COMMAND@" -E rm -f "${installed_file}"
-      RESULT_VARIABLE rm_result
-      OUTPUT_QUIET
-      ERROR_VARIABLE rm_error
-    )
-    if(NOT rm_result EQUAL 0)
-      message(FATAL_ERROR "Failed to remove ${installed_file}: ${rm_error}")
-    endif()
-  else()
-    message(STATUS "Already removed: ${installed_file}")
+  if(EXISTS "${_installed_file}" OR IS_SYMLINK "${_installed_file}")
+    message(STATUS "Removing: ${_installed_file}")
+    file(REMOVE "${_installed_file}")
   endif()
 endforeach()
 
 if(EXISTS "${_installed_manifest}")
-  message(STATUS "Uninstalling: ${_installed_manifest}")
-  execute_process(
-    COMMAND "@CMAKE_COMMAND@" -E rm -f "${_installed_manifest}"
-    RESULT_VARIABLE rm_manifest_result
-    OUTPUT_QUIET
-    ERROR_VARIABLE rm_manifest_error
-  )
-  if(NOT rm_manifest_result EQUAL 0)
-    message(FATAL_ERROR "Failed to remove ${_installed_manifest}: ${rm_manifest_error}")
-  endif()
+  message(STATUS "Removing: ${_installed_manifest}")
+  file(REMOVE "${_installed_manifest}")
 endif()
 
-message(STATUS "RVX SDK was successfully uninstalled.")
+file(GLOB_RECURSE _installed_directories LIST_DIRECTORIES true "${_install_prefix}/*")
+list(APPEND _installed_directories "${_install_prefix}")
+list(SORT _installed_directories COMPARE NATURAL ORDER DESCENDING)
+
+foreach(_directory ${_installed_directories})
+  if(IS_DIRECTORY "${_directory}")
+    file(GLOB _directory_contents "${_directory}/*")
+    if(NOT _directory_contents)
+      set(_permission_probe "${_directory}/.rvx_uninstall_write_test")
+      execute_process(
+        COMMAND "@CMAKE_COMMAND@" -E touch "${_permission_probe}"
+        RESULT_VARIABLE _permission_result
+        OUTPUT_QUIET
+        ERROR_QUIET
+      )
+      if(_permission_result EQUAL 0)
+        file(REMOVE "${_permission_probe}")
+        message(STATUS "Removing empty directory: ${_directory}")
+        file(REMOVE_RECURSE "${_directory}")
+      endif()
+    endif()
+  endif()
+endforeach()
+
+message(STATUS "RVX SDK uninstall completed.")

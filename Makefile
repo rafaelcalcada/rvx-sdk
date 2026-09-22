@@ -6,45 +6,35 @@ SHELL := /usr/bin/env bash
 BUILD_DIR ?= build
 CMAKE_BUILD_TYPE ?= Release
 CMAKE_ARGS ?=
-PREFIX_FILE := $(BUILD_DIR)/.install_prefix
+PREFIX ?= $(HOME)/.local/rvx-sdk
 BUILD_STAMP := $(BUILD_DIR)/.build_done
 
-.PHONY: all build install uninstall clean prepare-prefix
+.PHONY: all build install uninstall clean
 
 all: build
 
-prepare-prefix:
-	@selected_prefix="$(PREFIX)"; \
-	if [[ -z "$$selected_prefix" && -f "$(PREFIX_FILE)" ]]; then \
-		selected_prefix="$$(cat "$(PREFIX_FILE)")"; \
-	fi; \
-	if [[ -z "$$selected_prefix" ]]; then \
-		selected_prefix="$$HOME/rvx-sdk"; \
-	fi; \
-	mkdir -p "$(BUILD_DIR)"; \
-	printf '%s\n' "$$selected_prefix" > "$(PREFIX_FILE)"
+build: $(BUILD_STAMP)
 
-build: 
-	@echo "Configuring RVX SDK..."; \
+$(BUILD_STAMP):
+	@set -e; \
+	echo "Configuring RVX SDK..."; \
 	cmake -S . -B "$(BUILD_DIR)" \
 		-DCMAKE_BUILD_TYPE="$(CMAKE_BUILD_TYPE)" \
 		$(CMAKE_ARGS); \
 	echo "Building RVX SDK..."; \
-	cmake --build "$(BUILD_DIR)"; \
+	cmake --build "$(BUILD_DIR)" -- -s --no-print-directory; \
 	echo "RVX SDK build completed."; \
-	echo "Run 'make install' to install it locally for the current user (PREFIX=$$HOME/rvx-sdk)."; \
-	echo "Run 'make install PREFIX=/install/path' to install the SDK to a custom path."; \
-	touch "${BUILD_STAMP}"
 
-check-build:
-	@if [[ ! -f "$(BUILD_STAMP)" ]]; then \
-			echo "Build step has not been run yet." >&2; \
-			echo "Run 'make build' first." >&2; \
-			exit 1; \
-	fi
+ifneq ($(filter install,$(MAKECMDGOALS)),install)
+	@set -e; \
+	echo "Run 'make install' to install it locally for the current user (PREFIX=\$$HOME/.local/rvx-sdk)."; \
+	echo "Run 'make install PREFIX=/install/path' to install the SDK to a custom path (e.g. /opt/rvx-sdk)."; \
+	
+endif
+	@touch "$@"
 
-install: check-build prepare-prefix
-	@selected_prefix="$$(cat "$(PREFIX_FILE)")"; \
+install: build
+	@selected_prefix="$(PREFIX)"; \
 	check_path="$$selected_prefix"; \
 	while [[ ! -e "$$check_path" && "$$check_path" != "/" ]]; do \
 		check_path="$$(dirname "$$check_path")"; \
@@ -68,13 +58,8 @@ install: check-build prepare-prefix
 	echo "RVX SDK installation completed."
 
 uninstall:
-	@selected_prefix="$(PREFIX)"; \
-	if [[ -z "$$selected_prefix" && -f "$(PREFIX_FILE)" ]]; then \
-		selected_prefix="$$(cat "$(PREFIX_FILE)")"; \
-	fi; \
-	if [[ -z "$$selected_prefix" ]]; then \
-		selected_prefix="$$HOME/rvx-sdk"; \
-	fi; \
+	@set -e; \
+	selected_prefix="$(PREFIX)"; \
 	check_path="$$selected_prefix"; \
 	while [[ ! -e "$$check_path" && "$$check_path" != "/" ]]; do \
 			check_path="$$(dirname "$$check_path")"; \
@@ -88,47 +73,25 @@ uninstall:
 			fi; \
 			exit 1; \
 	fi; \
-	build_manifest="$(BUILD_DIR)/install_manifest.txt"; \
-	build_uninstall="$(BUILD_DIR)/RVXUninstall.cmake"; \
-	prefix_manifest_lib="$$selected_prefix/lib/cmake/RVX/RVXInstallManifest.txt"; \
-	prefix_uninstall_lib="$$selected_prefix/lib/cmake/RVX/RVXUninstall.cmake"; \
-	prefix_manifest_lib64="$$selected_prefix/lib64/cmake/RVX/RVXInstallManifest.txt"; \
-	prefix_uninstall_lib64="$$selected_prefix/lib64/cmake/RVX/RVXUninstall.cmake"; \
-	if [[ -f "$$build_manifest" ]]; then \
-		if [[ ! -f "$$build_uninstall" ]]; then \
-			echo "Found build manifest, but missing script: $$build_uninstall" >&2; \
-			exit 1; \
-		fi; \
-		echo "Using build manifest: $$build_manifest"; \
-		cmake -P "$$build_uninstall"; \
-		rm -f "$$HOME/.cmake/packages/RVX/rvx-sdk"; \
-		exit 0; \
+	manifest="$$selected_prefix/RVXInstallManifest.txt"; \
+	if [[ ! -f "$$manifest" ]]; then \
+		echo "RVX SDK install manifest not found. The RVX SDK may have already been uninstalled." >&2; \
+		echo "Checked: $$manifest" >&2; \
+		exit 1; \
 	fi; \
-	if [[ -f "$$prefix_manifest_lib" ]]; then \
-		if [[ ! -f "$$prefix_uninstall_lib" ]]; then \
-			echo "Found installed manifest, but missing script: $$prefix_uninstall_lib" >&2; \
-			exit 1; \
-		fi; \
-		echo "Using installed manifest: $$prefix_manifest_lib"; \
-		cmake -P "$$prefix_uninstall_lib"; \
-		rm -f "$$HOME/.cmake/packages/RVX/rvx-sdk"; \
-		exit 0; \
+	echo "Uninstalling RVX SDK from $$selected_prefix..."; \
+	while IFS= read -r installed_file; do \
+		[[ -n "$$installed_file" ]] || continue; \
+		echo "Removing: $$installed_file"; \
+		rm -f "$$installed_file"; \
+	done < "$$manifest"; \
+	if [[ -f "$$manifest" ]]; then \
+		echo "Removing: $$manifest"; \
+		rm -f "$$manifest"; \
 	fi; \
-	if [[ -f "$$prefix_manifest_lib64" ]]; then \
-		if [[ ! -f "$$prefix_uninstall_lib64" ]]; then \
-			echo "Found installed manifest, but missing script: $$prefix_uninstall_lib64" >&2; \
-			exit 1; \
-		fi; \
-		echo "Using installed manifest: $$prefix_manifest_lib64"; \
-		cmake -P "$$prefix_uninstall_lib64"; \
-		rm -f "$$HOME/.cmake/packages/RVX/rvx-sdk"; \
-		exit 0; \
-	fi; \
-	echo "RVX SDK uninstall manifest not found. It may have already been uninstalled." >&2; \
-	echo "Checked build: $$build_manifest" >&2; \
-	echo "Checked install: $$prefix_manifest_lib" >&2; \
-	echo "Checked install: $$prefix_manifest_lib64" >&2; \
-	exit 1
+	find "$$selected_prefix" -depth -type d -empty -printf 'Removing empty directory: %p\n' -delete 2>/dev/null || true; \
+	rm -f "$$HOME/.cmake/packages/RVX/rvx-sdk"; \
+	echo "RVX SDK uninstall completed."
 
 clean:
 	@rm -rf "$(BUILD_DIR)"

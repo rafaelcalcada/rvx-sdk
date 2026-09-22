@@ -1,8 +1,7 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2020-2026 RVX Project Contributors
 
-set(_rvx_pkg_dir "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/@CMAKE_INSTALL_LIBDIR@/cmake/RVX")
-file(MAKE_DIRECTORY "${_rvx_pkg_dir}")
-
-string(REPLACE ";" "\n" _rvx_manifest_content "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "${_rvx_pkg_dir}/RVXInstallManifest.txt" "${_rvx_manifest_content}\n")
+set(_rvx_manifest_path "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/RVXInstallManifest.txt")
+set(_rvx_manifest_files ${CMAKE_INSTALL_MANIFEST_FILES} "${_rvx_manifest_path}")
+string(REPLACE ";" "\n" _rvx_manifest_content "${_rvx_manifest_files}")
+file(WRITE "${_rvx_manifest_path}" "${_rvx_manifest_content}\n")
