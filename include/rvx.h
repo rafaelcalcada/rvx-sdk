@@ -17,6 +17,7 @@
 #include "rvx_setup.h"
 #include "rvx_spi.h"
 #include "rvx_timer.h"
+#include "rvx_trap.h"
 #include "rvx_uart.h"
 
 #endif // __RVX_H
