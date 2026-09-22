@@ -5,7 +5,6 @@ cmake_minimum_required(VERSION 3.28)
 
 project(RVX LANGUAGES C ASM)
 
-include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
 # Define as INTERFACE library
@@ -15,7 +14,7 @@ add_library(rvx_sdk INTERFACE)
 target_include_directories(rvx_sdk
   INTERFACE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
-  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+  $<INSTALL_INTERFACE:include>
 )
 
 # Compiler options
@@ -45,12 +44,6 @@ target_link_options(rvx_sdk
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/RVXBootImage.cmake)
 
 configure_file(
-  ${CMAKE_CURRENT_LIST_DIR}/cmake/RVXBootImage.cmake
-  ${CMAKE_CURRENT_BINARY_DIR}/RVXBootImage.cmake
-  COPYONLY
-)
-
-configure_file(
   ${CMAKE_CURRENT_LIST_DIR}/cmake/templates/RVXUninstall.cmake.in
   ${CMAKE_CURRENT_BINARY_DIR}/RVXUninstall.cmake
   @ONLY
@@ -68,21 +61,24 @@ add_custom_target(uninstall
 
 install(TARGETS rvx_sdk EXPORT RVXTargets)
 
-install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-install(DIRECTORY startup/ DESTINATION ${CMAKE_INSTALL_DATADIR}/rvx/startup)
-install(DIRECTORY ld/ DESTINATION ${CMAKE_INSTALL_DATADIR}/rvx/ld)
+install(DIRECTORY include/ DESTINATION include)
+install(FILES
+  ${CMAKE_CURRENT_LIST_DIR}/startup/rvx_startup.S
+  ${CMAKE_CURRENT_LIST_DIR}/ld/rvx.ld
+  DESTINATION source
+)
 
 install(FILES
-  ${CMAKE_CURRENT_BINARY_DIR}/RVXBootImage.cmake
-  ${CMAKE_CURRENT_BINARY_DIR}/RVXUninstall.cmake
+  ${CMAKE_CURRENT_LIST_DIR}/cmake/RVXBootImage.cmake
   ${CMAKE_CURRENT_LIST_DIR}/cmake/RVXToolchain.cmake
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/RVX
+  ${CMAKE_CURRENT_BINARY_DIR}/RVXUninstall.cmake
+  DESTINATION cmake
 )
 
 configure_package_config_file(
   ${CMAKE_CURRENT_LIST_DIR}/cmake/templates/RVXConfig.cmake.in
   ${CMAKE_CURRENT_BINARY_DIR}/RVXConfig.cmake
-  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/RVX
+  INSTALL_DESTINATION cmake
 )
 
 write_basic_package_version_file(
@@ -92,13 +88,13 @@ write_basic_package_version_file(
 )
 
 install(EXPORT RVXTargets
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/RVX
+  DESTINATION cmake
 )
 
 install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/RVXConfig.cmake
   ${CMAKE_CURRENT_BINARY_DIR}/RVXConfigVersion.cmake
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/RVX
+  DESTINATION cmake
 )
 
 # Persist the install manifest in the install tree so uninstall can work
