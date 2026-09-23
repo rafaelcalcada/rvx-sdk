@@ -56,14 +56,6 @@ static inline int rvx_trap_get_cause_m(void)
 }
 
 /**
- * @brief Return from an M-mode trap by executing the MRET instruction.
- */
-static inline void rvx_trap_return_m(void)
-{
-  __asm__ volatile("mret");
-}
-
-/**
  * @brief Returns `true` if the given cause code represents an exception, `false` otherwise.
  *
  * @param cause The cause code to check.
