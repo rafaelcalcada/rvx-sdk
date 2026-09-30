@@ -20,4 +20,7 @@
 #include "rvx_trap.h"
 #include "rvx_uart.h"
 
+// RVX Memory Map
+#define RVX_UART0 ((RvxUart *)0x40000000U)
+
 #endif // __RVX_H

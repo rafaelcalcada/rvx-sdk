@@ -8,220 +8,210 @@
 #error "Unsupported XLEN"
 #endif
 
+#include "rvx_csr.h"
 #include "rvx_macros.h"
 
-/// Base address of the UART controller registers.
-#define RVX_UART_CONTROLLER_ADDRESS 0x40000000U
+#define RVX_UART_STATUS_TX_READY_MASK 0x1U ///< UART transmit-ready status bit.
+#define RVX_UART_STATUS_RX_READY_MASK 0x2U ///< UART receive-ready status bit.
 
-/// Provide access to the UART controller registers.
-typedef struct RVX_ALIGNED RvxUartRegs
+/**
+ * @brief Structure representing the UART controller registers.
+ *
+ * The fields of this structure are laid out in the same order as the hardware registers,
+ * allowing direct access to them through a pointer.
+ *
+ * For example:
+ *
+ * ```c
+ * // Macro RVX_UART0 expands to the base address of UART0: ((RvxUart *)0x40000000U).
+ * uint32_t uart_status = RVX_UART0->RVX_UART_STATUS_REG; // Read the status register of UART0.
+ * ```
+ */
+typedef struct RVX_ALIGNED RvxUart
 {
   volatile uint32_t RVX_UART_WRITE_REG;  ///< RVX UART Write Register.
   volatile uint32_t RVX_UART_READ_REG;   ///< RVX UART Read Register.
   volatile uint32_t RVX_UART_STATUS_REG; ///< RVX UART Status Register.
   volatile uint32_t RVX_UART_BAUD_REG;   ///< RVX UART Baud Rate Configuration Register.
-} RvxUartRegs;
+} RvxUart;
 
 /**
- * @brief Set the UART controller baud rate.
- *
- * This function sets the UART controller baud rate by writing the appropriate value to the baud rate configuration
- * register. The value written is calculated based on the desired baud rate and the frequency of the clock signal
- * driving RVX.
+ * @brief Set the baud rate for the UART controller.
  *
  * Example usage:
  *
  * ```c
- * // Pointer to the UART controller registers.
- * RvxUartRegs *uart_controller = (RvxUartRegs *)RVX_UART_CONTROLLER_ADDRESS;
- *
- * // Set UART controller baud rate to 115200 bauds per second (RVX clock frequency is 50 MHz).
- * rvx_uart_set_baud_rate(uart_controller, 115200, 50000000);
+ * // Set the UART0 baud rate to 115200 baud.
+ * // Macro RVX_UART0 expands to the base address of UART0: ((RvxUart *)0x40000000U).
+ * rvx_uart_set_baud_rate(RVX_UART0, 115200);
  * ```
  *
- * @param uart_controller Pointer to the UART controller registers.
- * @param baud_rate The desired baud rate for UART communication, in bauds per second (bps).
- * @param rvx_clock_frequency The frequency of the clock signal driving RVX, in hertz (Hz).
+ * @param uart Pointer to the base address of the UART registers.
+ * @param baud_rate The desired baud rate in baud. A value of zero is ignored.
  */
-static inline void rvx_uart_set_baud_rate(RvxUartRegs *uart_controller, uint32_t baud_rate,
-                                          uint32_t rvx_clock_frequency)
+static inline void rvx_uart_set_baud_rate(RvxUart *uart, uint32_t baud_rate)
 {
-  uart_controller->RVX_UART_BAUD_REG = rvx_clock_frequency / baud_rate;
+  uint32_t clock_frequency_value;
+  uint32_t cycles_per_baud;
+
+  if (baud_rate == 0U)
+    return;
+
+  RVX_CSR_READ(RVX_CSR_CLOCK_FREQUENCY_ADDR, clock_frequency_value);
+  cycles_per_baud = clock_frequency_value / baud_rate;
+  uart->RVX_UART_BAUD_REG = cycles_per_baud == 0U ? 1U : cycles_per_baud;
 }
 
 /**
- * @brief Return `true` if the UART controller is ready to transmit a new byte, or `false` otherwise.
+ * @brief Return `true` if the UART is ready to transmit a new byte, or `false` otherwise.
  *
- * @note This function is non-blocking and can be used to check if the UART controller is ready before attempting to
- * send data.
+ * Example usage:
  *
- * @param uart_controller Pointer to the UART controller registers.
- * @return `true` if the UART controller is ready to send data, `false` otherwise.
+ * ```c
+ * // Wait until the UART is ready to transmit a new byte, then send it.
+ * // Macro RVX_UART0 expands to the base address of UART0: ((RvxUart *)0x40000000U).
+ * while (!rvx_uart_tx_ready(RVX_UART0));
+ * rvx_uart_write(RVX_UART0, 0x55);
+ * ```
+ *
+ * @param uart Pointer to the base address of the UART registers.
+ * @return `true` if the UART is ready to send data, `false` otherwise.
  */
-static inline bool rvx_uart_tx_ready(RvxUartRegs *uart_controller)
+static inline bool rvx_uart_tx_ready(RvxUart *uart)
 {
-  return uart_controller->RVX_UART_STATUS_REG & 1;
+  return (uart->RVX_UART_STATUS_REG & RVX_UART_STATUS_TX_READY_MASK) != 0U;
 }
 
 /**
- * @brief Return `true` if the UART controller has received a new byte, or `false` otherwise.
+ * @brief Return `true` if the UART has received a new byte, or `false` otherwise.
  *
- * @note This function is non-blocking and can be used to check if the UART controller has received data before
- * attempting to read it.
+ * Example usage:
  *
- * @param uart_controller Pointer to the UART controller registers.
- * @return `true` if the UART controller has received a new byte, `false` otherwise.
+ * ```c
+ * // Wait until a new byte is received, then read it.
+ * // Macro RVX_UART0 expands to the base address of UART0: ((RvxUart *)0x40000000U).
+ * while (!rvx_uart_rx_ready(RVX_UART0));
+ * uint8_t rx_data = rvx_uart_read(RVX_UART0);
+ * ```
+ *
+ * @param uart Pointer to the base address of the UART registers.
+ * @return `true` if the UART has received a new byte, `false` otherwise.
  */
-static inline bool rvx_uart_rx_ready(RvxUartRegs *uart_controller)
+static inline bool rvx_uart_rx_ready(RvxUart *uart)
 {
-  return (uart_controller->RVX_UART_STATUS_REG >> 1) & 1;
+  return (uart->RVX_UART_STATUS_REG & RVX_UART_STATUS_RX_READY_MASK) != 0U;
 }
 
 /**
- * @brief Read the last byte received by the UART controller and clear the UART interrupt.
+ * @brief Read the last byte received by the UART and clear the UART interrupt.
  *
- * This function is non-blocking and must be called from the trap handler for the UART interrupt.
+ * To check if a new byte has been received before calling this function, use `rvx_uart_rx_ready()`.
  *
- * The UART controller will trigger an interrupt every time a new byte is received. The interrupt remains active until
- * the received byte is read using this function, which also clears the interrupt.
+ * If this function is called before any data has been received, `0x00` is returned.
  *
- * If called before any data has been received, `0x00` is returned.
- *
- * The read is non-destructive, i.e., if this function is called again without new data being received, the same byte is
- * returned.
+ * This function is non-blocking and the read is non-destructive (does not remove the byte from the buffer).
  *
  * Example usage:
  * ```c
- * // Pointer to the UART controller registers.
- * RvxUartRegs *uart_controller = (RvxUartRegs *)RVX_UART_CONTROLLER_ADDRESS;
- *
- * // Provides a trap handler for the UART interrupt
- * RVX_TRAP_HANDLER_M(rvx_trap_handler_uart_m) {
- *   // Read the received byte and clear the interrupt
- *   uint8_t rx_data = rvx_uart_read(uart_controller);
- *   // Do something with rx_data ...
- * }
+ * // Wait until a new byte is received, then read it.
+ * // Macro RVX_UART0 expands to the base address of UART0: ((RvxUart *)0x40000000U).
+ * while (!rvx_uart_rx_ready(RVX_UART0));
+ * uint8_t rx_data = rvx_uart_read(RVX_UART0);
  * ```
  *
- * @param uart_controller Pointer to the UART controller registers.
+ * @param uart Pointer to the base address of the UART registers.
  * @return The last byte received by the UART controller, or `0x00` if called before any data has been received.
  */
-static inline uint8_t rvx_uart_read(RvxUartRegs *uart_controller)
+static inline uint8_t rvx_uart_read(RvxUart *uart)
 {
-  return uart_controller->RVX_UART_READ_REG;
+  return uart->RVX_UART_READ_REG;
 }
 
 /**
- * @brief Write a byte to the UART controller for transmission. Return `true` if the byte was successfully written, or
- * `false` if the UART controller is not ready to transmit.
+ * @brief Write a byte to the UART for transmission.
  *
- * This function is non-blocking and will return immediately.
+ * To check if the UART is ready to transmit before calling this function, use `rvx_uart_tx_ready()`.
  *
- * @note For blocking behavior that waits until the UART controller is ready before sending, see `rvx_uart_send()`.
+ * This function is non-blocking.
  *
- * Example usage:
- * ```c
- * // Pointer to the UART controller registers.
- * RvxUartRegs *uart_controller = (RvxUartRegs *)RVX_UART_CONTROLLER_ADDRESS;
- *
- * // Attempt to send 0xAB over UART without blocking.
- * bool tx_success = rvx_uart_write(uart_controller, 0xAB);
- * if (!tx_success) {
- *   // UART not ready to send, transmission failed.
- * }
- * ```
- *
- * @param uart_controller Pointer to the UART controller registers.
- * @param tx_data The byte to write (`uint8_t`).
- * @return `true` if the byte was successfully written to the UART controller, `false` if the UART controller is not
- * ready to transmit.
- */
-static inline bool rvx_uart_write(RvxUartRegs *uart_controller, uint8_t tx_data)
-{
-  if (!rvx_uart_tx_ready(uart_controller))
-  {
-    return false;
-  }
-  uart_controller->RVX_UART_WRITE_REG = tx_data;
-  return true;
-}
-
-/**
- * @brief Block until a new byte is received by the UART, then read and return that byte.
- *
- * @note For non-blocking behavior, use `rvx_uart_read()` instead.
- *
- * Example usage:
- * ```c
- * // Pointer to the UART controller registers.
- * RvxUartRegs *uart_controller = (RvxUartRegs *)RVX_UART_CONTROLLER_ADDRESS;
- *
- * // Blocks until a new byte is received, then reads it
- * uint8_t rx_data = rvx_uart_receive(uart_controller);
- * ```
- *
- * @param uart_controller Pointer to the UART controller registers.
- * @return The byte received by the UART controller.
- */
-static inline uint8_t rvx_uart_receive(RvxUartRegs *uart_controller)
-{
-  while (!rvx_uart_rx_ready(uart_controller))
-    ;
-  return uart_controller->RVX_UART_READ_REG;
-}
-
-/**
- * @brief Block until the UART controller is ready to transmit, then send a byte.
- *
- * For non-blocking behavior, see `rvx_uart_write()`.
+ * If this function is called before the UART is ready to transmit, the byte may be
+ * lost.
  *
  * Example usage:
  *
  * ```c
- * // Pointer to the UART controller registers.
- * RvxUartRegs *uart_controller = (RvxUartRegs *)RVX_UART_CONTROLLER_ADDRESS;
- *
- * // Send 'A' over UART
- * rvx_uart_send(uart_controller, 'A');
- *
- * // Wait until the transmission of 'A' is complete, then send 'B'
- * rvx_uart_send(uart_controller, 'B');
+ * // Wait until the UART is ready to transmit, then send a byte.
+ * // Macro RVX_UART0 expands to the base address of UART0: ((RvxUart *)0x40000000U).
+ * while (!rvx_uart_tx_ready(RVX_UART0));
+ * rvx_uart_write(RVX_UART0, 0x55);
  * ```
  *
- * @param uart_controller Pointer to the UART controller registers.
+ * @param uart Pointer to the base address of the UART registers.
  * @param tx_data The byte to write (`uint8_t`).
  */
-static inline void rvx_uart_send(RvxUartRegs *uart_controller, uint8_t tx_data)
+static inline void rvx_uart_write(RvxUart *uart, uint8_t tx_data)
 {
-  while (!rvx_uart_tx_ready(uart_controller))
-    ;
-  uart_controller->RVX_UART_WRITE_REG = tx_data;
+  uart->RVX_UART_WRITE_REG = tx_data;
 }
 
 /**
- * @brief Send a null-terminated C string over the UART.
+ * @brief Print a null-terminated string over the UART.
  *
- * Transmits each character in `c_str` sequentially. This function is blocking and
- * will wait for the UART controller to be ready before sending each character.
+ * The string is transmitted as-is. No newline or other characters are appended
+ * to the end of the string.
+ *
+ * This function will block until the UART has transmitted the entire string.
  *
  * Example usage:
- * ```c
- * // Pointer to the UART controller registers.
- * RvxUartRegs *uart_controller = (RvxUartRegs *)RVX_UART_CONTROLLER_ADDRESS;
  *
- * // Send the string "Hello, World!" over the UART
- * rvx_uart_send_string(uart_controller, "Hello, World!");
+ * ```c
+ * // Send "Hello, UART!" over UART0.
+ * // Macro RVX_UART0 expands to the base address of UART0: ((RvxUart *)0x40000000U).
+ * // The call below will block until the entire string is transmitted.
+ * rvx_uart_print(RVX_UART0, "Hello, UART!");
  * ```
  *
- * @param uart_controller Pointer to the UART controller registers.
- * @param c_str Pointer to the null-terminated C string to transmit.
+ * @param uart Pointer to the base address of the UART registers.
+ * @param str Pointer to the null-terminated C string to transmit.
  */
-static inline void rvx_uart_send_string(RvxUartRegs *uart_controller, const char *c_str)
+static inline void rvx_uart_print(RvxUart *uart, const char *str)
 {
-  while (*c_str)
+  while (*str)
   {
-    rvx_uart_send(uart_controller, *c_str++);
+    while (!rvx_uart_tx_ready(uart))
+      ;
+    rvx_uart_write(uart, *str++);
   }
+  while (!rvx_uart_tx_ready(uart))
+    ;
+}
+
+/**
+ * @brief Print a null-terminated string over the UART, followed by a newline character.
+ *
+ * The string is transmitted as-is, followed by a newline character (`\n`).
+ *
+ * This function will block until the UART has transmitted the entire string
+ * and the newline character.
+ *
+ * Example usage:
+ *
+ * ```c
+ * // Send "Hello, UART!" followed by a newline over UART0.
+ * // Macro RVX_UART0 expands to the base address of UART0: ((RvxUart *)0x40000000U).
+ * // The call below will block until the entire string and the newline are transmitted.
+ * rvx_uart_println(RVX_UART0, "Hello, UART!");
+ * ```
+ *
+ * @param uart Pointer to the base address of the UART registers.
+ * @param str Pointer to the null-terminated C string to transmit.
+ */
+static inline void rvx_uart_println(RvxUart *uart, const char *str)
+{
+  rvx_uart_print(uart, str);
+  rvx_uart_write(uart, '\n');
+  while (!rvx_uart_tx_ready(uart))
+    ;
 }
 
 #endif // __RVX_UART_H
