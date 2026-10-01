@@ -10,310 +10,325 @@
 
 #include "rvx_macros.h"
 
-// Base address of the GPIO controller registers.
-#define RVX_GPIO_CONTROLLER_ADDRESS 0x40002000U
-
-/// The mode (input/output) of a GPIO pin.
-typedef enum RvxGpioPinMode
+/// The direction (input/output) of a GPIO pin.
+typedef enum RvxGpioPinDirection
 {
-  RVX_GPIO_INPUT = 0, ///< Input mode.
-  RVX_GPIO_OUTPUT = 1 ///< Output mode.
-} RvxGpioPinMode;
+  RVX_GPIO_INPUT = 0, ///< Pin direction: Input.
+  RVX_GPIO_OUTPUT = 1 ///< Pin direction: Output.
+} RvxGpioPinDirection;
 
-typedef enum RvxGpioPinState
+/// The logic level (low/high) of a GPIO pin.
+typedef enum RvxGpioPinLevel
 {
-  RVX_GPIO_LOW = 0, ///< Logic 0 (low) state.
-  RVX_GPIO_HIGH = 1 ///< Logic 1 (high) state.
-} RvxGpioPinState;
+  RVX_GPIO_LOW = 0, ///< Low logic level (boolean false).
+  RVX_GPIO_HIGH = 1 ///< High logic level (boolean true).
+} RvxGpioPinLevel;
 
-/// Provide access to the GPIO controller registers.
-typedef struct RVX_ALIGNED RvxGpioRegs
+/**
+ * @brief Structure representing the GPIO controller registers.
+ *
+ * The fields of this structure are laid out in the same order as the hardware registers,
+ * allowing direct access to them through a pointer.
+ *
+ * For example:
+ *
+ * ```c
+ * // Macro RVX_GPIO0 expands to the base address of GPIO0: ((RvxGpio *)0x40002000U)
+ * uint32_t pin_values = rvx_gpio_port_read(RVX_GPIO0); // Read the current GPIO pin values.
+ * ```
+ */
+typedef struct RVX_ALIGNED RvxGpio
 {
   volatile uint32_t RVX_GPIO_READ_REG;          ///< RVX GPIO Read Register.
   volatile uint32_t RVX_GPIO_OUTPUT_ENABLE_REG; ///< RVX GPIO Output Enable Register.
   volatile uint32_t RVX_GPIO_OUTPUT_REG;        ///< RVX GPIO Output Register.
   volatile uint32_t RVX_GPIO_CLEAR_REG;         ///< RVX GPIO Clear Register.
   volatile uint32_t RVX_GPIO_SET_REG;           ///< RVX GPIO Set Register.
-} RvxGpioRegs;
+} RvxGpio;
 
 /**
- * @brief Set the mode (input/output) of the GPIO pin specified by `pin_index`.
+ * @brief Set the direction (input/output) of the GPIO pin specified by `pin_index`.
  *
- * Valid values for `pin_mode` are `RVX_GPIO_INPUT` and `RVX_GPIO_OUTPUT`.
+ * Valid values for `pin_direction` are `RVX_GPIO_INPUT` and `RVX_GPIO_OUTPUT`.
  *
  * Example usage:
  * ```c
- * // Pointer to the GPIO controller registers.
- * RvxGpioRegs *gpio_controller = (RvxGpioRegs *)RVX_GPIO_CONTROLLER_ADDRESS;
- *
  * // Configure pin 0 as output and pin 1 as input.
- * rvx_gpio_pin_mode(gpio_controller, 0, RVX_GPIO_OUTPUT);
- * rvx_gpio_pin_mode(gpio_controller, 1, RVX_GPIO_INPUT);
+ * // Macro RVX_GPIO0 expands to the base address of GPIO0: ((RvxGpio *)0x40002000U).
+ * rvx_gpio_pin_direction(RVX_GPIO0, 0, RVX_GPIO_OUTPUT);
+ * rvx_gpio_pin_direction(RVX_GPIO0, 1, RVX_GPIO_INPUT);
  * ```
  *
- * @param gpio_controller Pointer to the GPIO controller registers.
- * @param pin_index Index of the GPIO pin to configure as input or output.
- * @param pin_mode Desired pin mode as `RvxGpioPinMode` (`RVX_GPIO_INPUT` or `RVX_GPIO_OUTPUT`).
+ * @param gpio Pointer to the base address of the GPIO registers.
+ * @param pin_index GPIO pin index in the range 0 to 31.
+ * @param pin_direction Desired pin direction as `RvxGpioPinDirection` (`RVX_GPIO_INPUT` or `RVX_GPIO_OUTPUT`).
  */
-static inline void rvx_gpio_pin_mode(RvxGpioRegs *gpio_controller, const uint8_t pin_index, RvxGpioPinMode pin_mode)
+static inline void rvx_gpio_pin_direction(RvxGpio *gpio, const uint8_t pin_index, RvxGpioPinDirection pin_direction)
 {
-  if (pin_mode == RVX_GPIO_OUTPUT)
+  if (pin_index >= 32U)
+    return;
+
+  if (pin_direction == RVX_GPIO_OUTPUT)
   {
-    RVX_SET_BIT(gpio_controller->RVX_GPIO_OUTPUT_ENABLE_REG, pin_index);
+    RVX_SET_BIT(gpio->RVX_GPIO_OUTPUT_ENABLE_REG, pin_index);
   }
-  else if (pin_mode == RVX_GPIO_INPUT)
+  else if (pin_direction == RVX_GPIO_INPUT)
   {
-    RVX_CLR_BIT(gpio_controller->RVX_GPIO_OUTPUT_ENABLE_REG, pin_index);
+    RVX_CLR_BIT(gpio->RVX_GPIO_OUTPUT_ENABLE_REG, pin_index);
   }
 }
 
 /**
- * @brief Drive a GPIO output pin to logic 1 (high).
+ * @brief Drive a GPIO output pin to high logic level (boolean true).
  *
- * Drives the pin specified by `pin_index` to logic 1 (high) if it is configured as an output.
+ * If `pin_index` is configured as input, the internal output latch is updated but the pin logic level remains
+ * unaffected.
  *
  * Example usage:
  * ```c
- * // Pointer to the GPIO controller registers.
- * RvxGpioRegs *gpio_controller = (RvxGpioRegs *)RVX_GPIO_CONTROLLER_ADDRESS;
- *
- * // Configure pin 0 as output.
- * rvx_gpio_pin_mode(gpio_controller, 0, RVX_GPIO_OUTPUT);
- *
- * // Set pin 0 to logic 1 (high).
- * rvx_gpio_pin_set(gpio_controller, 0);
+ * // Configure pin 0 as output and set it to high logic level.
+ * // Macro RVX_GPIO0 expands to the base address of GPIO0: ((RvxGpio *)0x40002000U).
+ * rvx_gpio_pin_direction(RVX_GPIO0, 0, RVX_GPIO_OUTPUT);
+ * rvx_gpio_pin_set(RVX_GPIO0, 0);
  * ```
  *
- * @param gpio_controller Pointer to the GPIO controller registers.
- * @param pin_index Index of the GPIO pin to set.
+ * @param gpio Pointer to the base address of the GPIO registers.
+ * @param pin_index GPIO pin index in the range 0 to 31.
  */
-static inline void rvx_gpio_pin_set(RvxGpioRegs *gpio_controller, const uint8_t pin_index)
+static inline void rvx_gpio_pin_set(RvxGpio *gpio, const uint8_t pin_index)
 {
-  gpio_controller->RVX_GPIO_SET_REG = 0x1U << pin_index;
+  if (pin_index >= 32U)
+    return;
+
+  gpio->RVX_GPIO_SET_REG = 0x1U << pin_index;
 }
 
 /**
- * @brief Drive a GPIO output pin to logic 0 (low).
+ * @brief Drive a GPIO output pin to low logic level (boolean false).
  *
- * Drives the pin specified by `pin_index` to logic 0 (low) if it is configured as an output.
+ * If `pin_index` is configured as input, the internal output latch is updated but the pin logic level remains
+ * unaffected.
  *
  * Example usage:
  * ```c
- * // Pointer to the GPIO controller registers.
- * RvxGpioRegs *gpio_controller = (RvxGpioRegs *)RVX_GPIO_CONTROLLER_ADDRESS;
- *
- * // Configure pin 0 as output.
- * rvx_gpio_pin_mode(gpio_controller, 0, RVX_GPIO_OUTPUT);
- *
- * // Set pin 0 to logic 0 (low).
- * rvx_gpio_pin_clear(gpio_controller, 0);
+ * // Configure pin 0 as output and set it to low logic level.
+ * // Macro RVX_GPIO0 expands to the base address of GPIO0: ((RvxGpio *)0x40002000U).
+ * rvx_gpio_pin_direction(RVX_GPIO0, 0, RVX_GPIO_OUTPUT);
+ * rvx_gpio_pin_clear(RVX_GPIO0, 0);
  * ```
  *
- * @param gpio_controller Pointer to the GPIO controller registers.
- * @param pin_index Index of the GPIO pin to clear.
+ * @param gpio Pointer to the base address of the GPIO registers.
+ * @param pin_index GPIO pin index in the range 0 to 31.
  */
-static inline void rvx_gpio_pin_clear(RvxGpioRegs *gpio_controller, const uint8_t pin_index)
+static inline void rvx_gpio_pin_clear(RvxGpio *gpio, const uint8_t pin_index)
 {
-  gpio_controller->RVX_GPIO_CLEAR_REG = 0x1U << pin_index;
+  if (pin_index >= 32U)
+    return;
+
+  gpio->RVX_GPIO_CLEAR_REG = 0x1U << pin_index;
 }
 
 /**
- * @brief Read the logic state of a GPIO pin.
+ * @brief Read the logic level of a GPIO pin.
  *
- * Returns the current logic state of the pin specified by `pin_index`. Both input and output pins
+ * Returns the current logic level of the pin specified by `pin_index`. Both input and output pins
  * can be read.
  *
  * Example usage:
  * ```c
- * // Pointer to the GPIO controller registers.
- * RvxGpioRegs *gpio_controller = (RvxGpioRegs *)RVX_GPIO_CONTROLLER_ADDRESS;
- *
- * // Configure pin 0 as input.
- * rvx_gpio_pin_mode(gpio_controller, 0, RVX_GPIO_INPUT);
- *
- * // Read the state of pin 0.
- * RvxGpioPinState pin0_state = rvx_gpio_pin_read(gpio_controller, 0);
+ * // Read the logic level of pin 0.
+ * // Macro RVX_GPIO0 expands to the base address of GPIO0: ((RvxGpio *)0x40002000U).
+ * RvxGpioPinLevel pin0_level = rvx_gpio_pin_read(RVX_GPIO0, 0);
  * ```
  *
- * @param gpio_controller Pointer to the GPIO controller registers.
- * @param pin_index Index of the GPIO pin to read.
- * @return The pin logic state as `RvxGpioPinState` (`RVX_GPIO_LOW` or `RVX_GPIO_HIGH`).
+ * @param gpio Pointer to the base address of the GPIO registers.
+ * @param pin_index GPIO pin index in the range 0 to 31.
+ * @return The pin logic level as `RvxGpioPinLevel` (`RVX_GPIO_LOW` or `RVX_GPIO_HIGH`).
  */
-static inline RvxGpioPinState rvx_gpio_pin_read(RvxGpioRegs *gpio_controller, const uint8_t pin_index)
+static inline RvxGpioPinLevel rvx_gpio_pin_read(RvxGpio *gpio, const uint8_t pin_index)
 {
-  return RVX_READ_BIT(gpio_controller->RVX_GPIO_READ_REG, pin_index) ? RVX_GPIO_HIGH : RVX_GPIO_LOW;
+  if (pin_index >= 32U)
+    return RVX_GPIO_LOW;
+
+  return RVX_READ_BIT(gpio->RVX_GPIO_READ_REG, pin_index) ? RVX_GPIO_HIGH : RVX_GPIO_LOW;
 }
 
 /**
- * @brief Write a logic value to a GPIO output pin.
+ * @brief Drive a GPIO output pin to the specified logic level (low/high).
  *
- * If `pin_state` is `RVX_GPIO_HIGH`, the pin is set to logic 1 (high); if `pin_state` is `RVX_GPIO_LOW`, the pin is set
- * to logic 0 (low).
+ * If `pin_index` is configured as input, the internal output latch is updated but the pin logic level remains
+ * unaffected.
+ *
+ * Valid values for `pin_level` are `RVX_GPIO_LOW` and `RVX_GPIO_HIGH`.
  *
  * Example usage:
  * ```c
- * // Pointer to the GPIO controller registers.
- * RvxGpioRegs *gpio_controller = (RvxGpioRegs *)RVX_GPIO_CONTROLLER_ADDRESS;
- *
- * // Configure pins 0 and 1 as outputs.
- * rvx_gpio_pin_mode(gpio_controller, 0, RVX_GPIO_OUTPUT);
- * rvx_gpio_pin_mode(gpio_controller, 1, RVX_GPIO_OUTPUT);
- *
- * // Write logic 0 (low) to pin 0 and 1 (high) to pin 1.
- * rvx_gpio_pin_write(gpio_controller, 0, RVX_GPIO_LOW);
- * rvx_gpio_pin_write(gpio_controller, 1, RVX_GPIO_HIGH);
+ * // Configure pin 0 as output and drive it to high logic level (boolean true)
+ * // Macro RVX_GPIO0 expands to the base address of GPIO0: ((RvxGpio *)0x40002000U).
+ * rvx_gpio_pin_direction(RVX_GPIO0, 0, RVX_GPIO_OUTPUT);
+ * rvx_gpio_pin_write(RVX_GPIO0, 0, RVX_GPIO_HIGH);
  * ```
  *
- * @param gpio_controller Pointer to the GPIO controller registers.
- * @param pin_index Index of the GPIO pin to write.
- * @param pin_state Desired logic value (`RVX_GPIO_HIGH` for logic 1 or `RVX_GPIO_LOW` for logic 0).
+ * @param gpio Pointer to the base address of the GPIO registers.
+ * @param pin_index GPIO pin index in the range 0 to 31.
+ * @param pin_level Desired logic level (`RVX_GPIO_HIGH` for boolean true or `RVX_GPIO_LOW` for boolean false).
  */
-static inline void rvx_gpio_pin_write(RvxGpioRegs *gpio_controller, const uint8_t pin_index, RvxGpioPinState pin_state)
+static inline void rvx_gpio_pin_write(RvxGpio *gpio, const uint8_t pin_index, RvxGpioPinLevel pin_level)
 {
-  if (pin_state == RVX_GPIO_HIGH)
-    gpio_controller->RVX_GPIO_SET_REG = 0x1U << pin_index;
-  else if (pin_state == RVX_GPIO_LOW)
-    gpio_controller->RVX_GPIO_CLEAR_REG = 0x1U << pin_index;
+  if (pin_index >= 32U)
+    return;
+
+  if (pin_level == RVX_GPIO_HIGH)
+    gpio->RVX_GPIO_SET_REG = 0x1U << pin_index;
+  else if (pin_level == RVX_GPIO_LOW)
+    gpio->RVX_GPIO_CLEAR_REG = 0x1U << pin_index;
 }
 
 /**
- * @brief Set the mode (input/output) of all GPIO pins simultaneously.
+ * @brief Set the direction (input/output) of all GPIO pins simultaneously.
  *
- * Sets the mode of all GPIO pins according to `mode_mask`. Each bit set to 1 configures
- * the corresponding pin as an output, and each bit set to 0 configures it as an input. Pins are
- * updated simultaneously in a single register write.
+ * The `direction_mask` parameter specifies the direction of each GPIO pin. Bit `n` in `direction_mask` corresponds to
+ * GPIO pin `n`. Setting a bit to 1 configures the corresponding pin as an output, while setting it to 0 configures the
+ * pin as an input. All pin directions are updated in a single register write.
+ *
+ * Bits beyond the number of available GPIO pins are ignored. For example, if the GPIO module is configured to have 4
+ * pins, any bits set in `direction_mask` beyond bit 3 will be ignored.
  *
  * Example usage:
  * ```c
- * // Pointer to the GPIO controller registers.
- * RvxGpioRegs *gpio_controller = (RvxGpioRegs *)RVX_GPIO_CONTROLLER_ADDRESS;
- *
- * // Set pins 0 and 1 as inputs, and pins 2 and 3 as outputs in a single operation.
- * rvx_gpio_port_mode(gpio_controller, 0b1100);
+ * // Set pins 0 and 1 as inputs, and pins 2 and 3 as outputs.
+ * // Macro RVX_GPIO0 expands to the base address of GPIO0: ((RvxGpio *)0x40002000U).
+ * rvx_gpio_port_direction(RVX_GPIO0, 0b1100);
  * ```
  *
- * @note To set the mode of a single pin, use `rvx_gpio_pin_mode()` instead.
+ * @note To set the direction of a single pin, use `rvx_gpio_pin_direction()` instead.
  *
- * @param gpio_controller Pointer to the GPIO controller registers.
- * @param mode_mask 32-bit bitmask specifying the mode of each pin:
- *                  0 = input, 1 = output.
+ * @param gpio Pointer to the base address of the GPIO registers.
+ * @param direction_mask Bitmask specifying the direction of each pin: 0 for input, 1 for output.
  */
-static inline void rvx_gpio_port_mode(RvxGpioRegs *gpio_controller, const uint32_t mode_mask)
+static inline void rvx_gpio_port_direction(RvxGpio *gpio, const uint32_t direction_mask)
 {
-  gpio_controller->RVX_GPIO_OUTPUT_ENABLE_REG = mode_mask;
+  gpio->RVX_GPIO_OUTPUT_ENABLE_REG = direction_mask;
 }
 
 /**
- * @brief Drive multiple GPIO output pins to logic 1 (high) in a single operation.
+ * @brief Drive multiple GPIO output pins to high logic level (boolean true).
  *
- * Drives all GPIO pins corresponding to bits set to 1 in `bitmask` to logic 1 (high) if they are
- * configured as outputs.
+ * The `bitmask` parameter specifies which GPIO pins to drive high. Bit `n` in `bitmask` corresponds to GPIO pin `n`.
+ * Setting a bit to 1 drives the corresponding pin to high logic level, while setting it to 0 leaves the pin unchanged.
+ *
+ * If pin `n` is not configured as an output, setting the corresponding bit in `bitmask` updates its internal output
+ * latch, but the pin logic level remains unaffected.
+ *
+ * Bits beyond the number of available GPIO pins are ignored. For example, if the GPIO module is configured to have 4
+ * pins, any bits set in `bitmask` beyond bit 3 will be ignored.
  *
  * Example usage:
  * ```c
- * // Pointer to the GPIO controller registers.
- * RvxGpioRegs *gpio_controller = (RvxGpioRegs *)RVX_GPIO_CONTROLLER_ADDRESS;
- *
- * // Configure pin modes in a single operation.
- * rvx_gpio_port_mode(gpio_controller, 0b1110);
- *
- * // Set pins 1 and 2 to logic 1 (high) in a single operation.
- * rvx_gpio_port_set(gpio_controller, 0b0110);
+ * // Set pins 1 and 2 to high logic level, leaving all other pins unchanged.
+ * // Macro RVX_GPIO0 expands to the base address of GPIO0: ((RvxGpio *)0x40002000U).
+ * rvx_gpio_port_direction(RVX_GPIO0, 0b1110);
+ * rvx_gpio_port_set(RVX_GPIO0, 0b0110);
  * ```
  *
- * @param gpio_controller Pointer to the GPIO controller registers.
- * @param bitmask 32-bit bitmask specifying which pins to set:
- *                1 = set to logic 1 (high), 0 = leave unchanged.
+ * @param gpio Pointer to the base address of the GPIO registers.
+ * @param bitmask Bitmask specifying which pins to set to high logic level: 1 = high logic level (boolean true), 0 =
+ * leave unchanged.
  */
-static inline void rvx_gpio_port_set(RvxGpioRegs *gpio_controller, const uint32_t bitmask)
+static inline void rvx_gpio_port_set(RvxGpio *gpio, const uint32_t bitmask)
 {
-  gpio_controller->RVX_GPIO_SET_REG = bitmask;
+  gpio->RVX_GPIO_SET_REG = bitmask;
 }
 
 /**
- * @brief Drive multiple GPIO output pins to logic 0 (low) in a single operation.
+ * @brief Drive multiple GPIO output pins to low logic level (boolean false).
  *
- * Drives all GPIO pins corresponding to bits set to 1 in `bitmask` to logic 0 (low) if they are
- * configured as outputs.
+ * The `bitmask` parameter specifies which GPIO pins to drive low. Bit `n` in `bitmask` corresponds to GPIO pin `n`.
+ * Setting a bit to 1 drives the corresponding pin to low logic level, while setting it to 0 leaves the pin unchanged.
+ *
+ * If pin `n` is not configured as an output, setting the corresponding bit in `bitmask` updates its internal output
+ * latch, but the pin logic level remains unaffected.
+ *
+ * Bits beyond the number of available GPIO pins are ignored. For example, if the GPIO module is configured to have 4
+ * pins, any bits set in `bitmask` beyond bit 3 will be ignored.
  *
  * Example usage:
  * ```c
- * // Pointer to the GPIO controller registers.
- * RvxGpioRegs *gpio_controller = (RvxGpioRegs *)RVX_GPIO_CONTROLLER_ADDRESS;
- *
- * // Configure pin modes in a single operation.
- * rvx_gpio_port_mode(gpio_controller, 0b1110);
- *
- * // Drive pins 1 and 2 to logic 0 (low) in a single operation.
- * rvx_gpio_port_clear(gpio_controller, 0b0110);
+ * // Set pins 0 and 3 to low logic level, leaving all other pins unchanged.
+ * // Macro RVX_GPIO0 expands to the base address of GPIO0: ((RvxGpio *)0x40002000U).
+ * rvx_gpio_port_direction(RVX_GPIO0, 0b1101);
+ * rvx_gpio_port_clear(RVX_GPIO0, 0b1001);
  * ```
  *
- * @param gpio_controller Pointer to the GPIO controller registers.
- * @param bitmask 32-bit bitmask specifying which pins to clear:
- *                1 = set to logic 0 (low), 0 = leave unchanged.
+ * @param gpio Pointer to the base address of the GPIO registers.
+ * @param bitmask 32-bit bitmask specifying which pins to set to low logic level:
+ *                1 = low logic level (boolean false), 0 = leave unchanged.
  */
-static inline void rvx_gpio_port_clear(RvxGpioRegs *gpio_controller, const uint32_t bitmask)
+static inline void rvx_gpio_port_clear(RvxGpio *gpio, const uint32_t bitmask)
 {
-  gpio_controller->RVX_GPIO_CLEAR_REG = bitmask;
+  gpio->RVX_GPIO_CLEAR_REG = bitmask;
 }
 
 /**
- * @brief Read the logic values of all GPIO pins simultaneously.
+ * @brief Read the logic levels of all GPIO pins simultaneously.
  *
- * Returns the current logic levels of all pins in a single 32-bit value. Only the lower bits
- * corresponding to implemented pins are valid; higher bits are zero-padded.
+ * The returned 32-bit value represents the logic levels of all GPIO pins. Bit `n` in the returned value corresponds to
+ * GPIO pin `n`. A value of 1 indicates high logic level (boolean true), and a value of 0 indicates low logic level
+ * (boolean false).
+ *
+ * The higher bits beyond the number of available GPIO pins are padded with zeros. For example, if the GPIO module is
+ * configured to have 4 pins, bits 4 to 31 in the returned value will be zero.
  *
  * Example usage:
  * ```c
- * // Pointer to the GPIO controller registers.
- * RvxGpioRegs *gpio_controller = (RvxGpioRegs *)RVX_GPIO_CONTROLLER_ADDRESS;
- *
- * // Read all pins simultaneously.
- * uint32_t pin_values = rvx_gpio_port_read(gpio_controller);
+ * // Read the logic levels of all pins simultaneously.
+ * // Macro RVX_GPIO0 expands to the base address of GPIO0: ((RvxGpio *)0x40002000U).
+ * uint32_t pin_values = rvx_gpio_port_read(RVX_GPIO0);
  *
  * // Extract individual pin values.
- * bool pin0_value = (pin_values >> 0) & 1;
- * bool pin1_value = (pin_values >> 1) & 1;
- * bool pin2_value = (pin_values >> 2) & 1;
- * bool pin3_value = (pin_values >> 3) & 1;
+ * RvxGpioPinLevel pin0_level = (pin_values >> 0) & 1;
+ * RvxGpioPinLevel pin1_level = (pin_values >> 1) & 1;
+ * RvxGpioPinLevel pin2_level = (pin_values >> 2) & 1;
+ * RvxGpioPinLevel pin3_level = (pin_values >> 3) & 1;
  * ```
  *
- * @param gpio_controller Pointer to the GPIO controller registers.
- * @return 32-bit value representing the logic states of all GPIO pins.
- *         Only lower bits corresponding to implemented pins are valid; higher bits are zero-padded.
+ * @param gpio Pointer to the base address of the GPIO registers.
+ * @return 32-bit value representing the logic levels of all GPIO pins. Only lower bits corresponding to implemented
+ * pins are valid; higher bits are zero-padded.
  */
-static inline uint32_t rvx_gpio_port_read(RvxGpioRegs *gpio_controller)
+static inline uint32_t rvx_gpio_port_read(RvxGpio *gpio)
 {
-  return gpio_controller->RVX_GPIO_READ_REG;
+  return gpio->RVX_GPIO_READ_REG;
 }
 
 /**
- * @brief Write logic values to all GPIO output pins in a single operation.
+ * @brief Drive GPIO output pins to the specified logic levels (low/high).
  *
- * Each bit set to 1 in `value_mask` sets the corresponding GPIO output pin to logic 1 (high), and each
- * bit set to 0 sets the corresponding pin to logic 0 (low), in a single operation.
+ * The `level_mask` parameter specifies the desired logic levels for the GPIO output pins. Bit `n` in `level_mask`
+ * corresponds to GPIO pin `n`. A value of 1 sets an output pin to high logic level (boolean true), and a value of 0
+ * sets it to low logic level (boolean false).
  *
- * The bits corresponding to input pins are ignored.
+ * If pin `n` is configured as an input, setting its corresponding bit in `level_mask` updates its internal output
+ * latch, but does not affect the actual pin logic level.
+ *
+ * Bits beyond the number of available GPIO pins are ignored. For example, if the GPIO module is configured to have 4
+ * pins, only the lower 4 bits of `level_mask` are considered; higher bits are ignored.
  *
  * Example usage:
  * ```c
- * // Pointer to the GPIO controller registers.
- * RvxGpioRegs *gpio_controller = (RvxGpioRegs *)RVX_GPIO_CONTROLLER_ADDRESS;
- *
- * // Configure pin modes in a single operation.
- * rvx_gpio_port_mode(gpio_controller, 0b1110);
- *
- * // The state of output pins (1, 2 and 3) is updated in a single operation.
- * rvx_gpio_port_write(gpio_controller, 0b0100);
+ * // Set GPIO pins 0 and 2 to high, and pins 1 and 3 to low.
+ * // Macro RVX_GPIO0 expands to the base address of GPIO0: ((RvxGpio *)0x40002000U).
+ * rvx_gpio_port_direction(RVX_GPIO0, 0b1111);
+ * rvx_gpio_port_write(RVX_GPIO0, 0b0101);
  * ```
  *
- * @param gpio_controller Pointer to the GPIO controller registers.
- * @param value_mask 32-bit bitmask specifying the logic values for the pins:
- *                   1 = set to logic 1 (high), 0 = set to logic 0 (low).
+ * @param gpio Pointer to the base address of the GPIO registers.
+ * @param level_mask Bitmask specifying the logic level for each pin: 1 = high logic level (boolean true), 0 = low
+ *                   logic level (boolean false).
  */
-static inline void rvx_gpio_port_write(RvxGpioRegs *gpio_controller, const uint32_t value_mask)
+static inline void rvx_gpio_port_write(RvxGpio *gpio, const uint32_t level_mask)
 {
-  gpio_controller->RVX_GPIO_OUTPUT_REG = value_mask;
+  gpio->RVX_GPIO_OUTPUT_REG = level_mask;
 }
 
 #endif // __RVX_GPIO_H

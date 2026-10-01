@@ -22,5 +22,6 @@
 
 // RVX Memory Map
 #define RVX_UART0 ((RvxUart *)0x40000000U)
+#define RVX_GPIO0 ((RvxGpio *)0x40002000U)
 
 #endif // __RVX_H
