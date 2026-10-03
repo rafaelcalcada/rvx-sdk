@@ -53,4 +53,5 @@ set_property(TARGET rvx_sdk APPEND PROPERTY INTERFACE_LINK_OPTIONS
 
 set_property(TARGET rvx_sdk APPEND PROPERTY INTERFACE_SOURCES
 	"${RVX_STARTUP_DIR}/rvx_startup.S"
+  "${RVX_STARTUP_DIR}/rvx_i2c.c"
 )

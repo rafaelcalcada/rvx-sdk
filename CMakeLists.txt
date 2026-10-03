@@ -10,6 +10,11 @@ include(CMakePackageConfigHelpers)
 # Define as INTERFACE library
 add_library(rvx_sdk INTERFACE)
 
+# Compile I2C transactions as implementation code so bus-level helpers remain private.
+target_sources(rvx_sdk INTERFACE
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/source/rvx_i2c.c>
+)
+
 # Include directories
 target_include_directories(rvx_sdk
   INTERFACE
@@ -63,6 +68,7 @@ install(TARGETS rvx_sdk EXPORT RVXTargets)
 
 install(DIRECTORY include/ DESTINATION include)
 install(FILES
+  ${CMAKE_CURRENT_LIST_DIR}/source/rvx_i2c.c
   ${CMAKE_CURRENT_LIST_DIR}/startup/rvx_startup.S
   ${CMAKE_CURRENT_LIST_DIR}/ld/rvx.ld
   DESTINATION source
