@@ -25,5 +25,6 @@
 #define RVX_GPIO0 ((RvxGpio *)0x40002000U)
 #define RVX_SPI0 ((RvxSpi *)0x40003000U)
 #define RVX_I2C0 ((RvxI2c *)0x40004000U)
+#define RVX_PLIC0 ((RvxPlic *)0x40005000U)
 
 #endif // __RVX_H
