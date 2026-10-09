@@ -14,7 +14,6 @@
 #include "rvx_irq.h"
 #include "rvx_macros.h"
 #include "rvx_plic.h"
-#include "rvx_setup.h"
 #include "rvx_spi.h"
 #include "rvx_timer.h"
 #include "rvx_trap.h"
@@ -22,6 +21,7 @@
 
 // RVX Memory Map
 #define RVX_UART0 ((RvxUart *)0x40000000U)
+#define RVX_TIMER0 ((RvxTimer *)0x40001000U)
 #define RVX_GPIO0 ((RvxGpio *)0x40002000U)
 #define RVX_SPI0 ((RvxSpi *)0x40003000U)
 #define RVX_I2C0 ((RvxI2c *)0x40004000U)
