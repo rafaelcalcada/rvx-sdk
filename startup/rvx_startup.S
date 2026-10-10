@@ -16,10 +16,6 @@ __rvx_startup:
   addi t0, t0, 4
   j 1b
 2:
-  la t0, rvx_trap_vector
-  li t1, 1
-  or t0, t0, t1
-  csrw mtvec, t0
   call __libc_init_array
   call main
   call __libc_fini_array
@@ -33,29 +29,6 @@ __libc_init_array:
 .weak __libc_fini_array
 __libc_fini_array:
   ret
-
-.section ".init.rvx_trap_vector"
-.global rvx_trap_vector
-rvx_trap_vector:
-  .option push
-  .option norvc
-  j rvx_trap_handler                  // Trap handler for all exceptions and also for interrupts if in direct mode
-  j rvx_irq_handler_software_s        // IRQ handler for Software IRQ from S-mode (future proofing, not used now in RVX)
-  j rvx_unimplemented_handler
-  j rvx_irq_handler_software_m        // IRQ handler for Software IRQ from M-mode
-  j rvx_unimplemented_handler
-  j rvx_irq_handler_timer_s           // IRQ handler for Timer IRQ from S-mode (future proofing, not used now in RVX)
-  j rvx_unimplemented_handler
-  j rvx_irq_handler_timer_m           // IRQ handler for Timer IRQ from M-mode
-  j rvx_unimplemented_handler
-  j rvx_irq_handler_external_s        // IRQ handler for External IRQ from S-mode (future proofing, not used now in RVX)
-  j rvx_unimplemented_handler
-  j rvx_irq_handler_external_m        // IRQ handler for External IRQ from M-mode
-  j rvx_unimplemented_handler
-  j rvx_irq_handler_counter_overflow  // IRQ handler for Counter Overflow IRQ
-  j rvx_unimplemented_handler
-  j rvx_unimplemented_handler
-  .option pop
 
 // Expose relevant CSRs using integer file registers for debugging purposes. 
 // Then halts execution.
