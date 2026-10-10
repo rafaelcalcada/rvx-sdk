@@ -50,38 +50,32 @@ typedef struct RVX_ALIGNED RvxI2c
 } RvxI2c;
 
 /**
- * @brief Set the clock divider for the I2C controller.
+ * @brief Set the clock divider for the I2C controller, which determines the I2C clock pin frequency.
  *
- * The clock divider determines the frequency of I2C communication according to the formula `scl_freq = rvx_clock_freq /
- * clock_divider`, where `scl_freq` is the resulting I2C clock frequency, `rvx_clock_freq` is the frequency of the
- * clock driving RVX, and `clock_divider` is the even integer value passed to this function.
+ * The `clock_divider` value must be an even integer between 2 and 65534 (inclusive). Values outside this range or odd
+ * values will be ignored without error, leaving the I2C clock unchanged.
  *
- * The `clock_divider` value must be between 2 and 65534 (inclusive).
+ * The I2C clock frequency will be equal to the RVX clock frequency divided by the clock divider.
  *
- * If a value outside the valid range is passed for `clock_divider`, it will be rounded to the nearest valid value (2 or
- * 65534) without error.
- *
- * If an odd value is passed for `clock_divider`, it will be rounded down to the nearest even integer without error.
+ * `i2c_clock_frequency = rvx_clock_frequency / clock_divider`
  *
  * Example usage:
  * ```c
- * // Divide RVX clock by 120 for I2C communication.
- * // Example: if RVX clock is 12MHz, the I2C speed will be 100kHz.
+ * // RVX initialization (adjust the clock frequency as needed)
+ * const RvxSetup rvx_setup = {.clock_frequency = 12000000U, .trap_handler = RVX_DEFAULT_TRAP_HANDLER};
+ * rvx_init(&rvx_setup);
+ *
+ * // Set the I2C clock divider to configure the I2C clock frequency to 100 kHz (12000000 / 120 = 100000).
  * // Macro RVX_I2C0 expands to the base address of I2C0: ((RvxI2c *)0x40004000U).
- * rvx_i2c_set_divider(RVX_I2C0, 120);
+ * rvx_i2c_set_clock_divider(RVX_I2C0, 120);
  * ```
  *
- * @note After reset, the `clock_divider` is set to 2 by default.
- *
- * @param i2c Pointer to the base address of the I2C registers.
- * @param clock_divider Even integer between 2 and 65534 (inclusive) that determines the I2C SCL pin frequency.
- *
  */
-static inline void rvx_i2c_set_divider(RvxI2c *i2c, uint16_t clock_divider)
+static inline void rvx_i2c_set_clock_divider(RvxI2c *i2c, uint16_t clock_divider)
 {
-  if (clock_divider < 2)
-    clock_divider = 2;
-  i2c->RVX_I2C_DIVIDER_REG = (clock_divider >> 1) - 1;
+  if (clock_divider < 2U || clock_divider > 65534U || clock_divider % 2U != 0U)
+    return;
+  i2c->RVX_I2C_DIVIDER_REG = (clock_divider / 2U) - 1U;
 }
 
 /**

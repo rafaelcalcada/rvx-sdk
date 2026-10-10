@@ -9,7 +9,6 @@
 #endif
 
 #include "rvx_macros.h"
-#include "rvx_setup.h"
 
 #define RVX_UART_STATUS_TX_READY_MASK 0x1U ///< UART transmit-ready status bit.
 #define RVX_UART_STATUS_RX_READY_MASK 0x2U ///< UART receive-ready status bit.
@@ -36,60 +35,33 @@ typedef struct RVX_ALIGNED RvxUart
 } RvxUart;
 
 /**
- * @brief Set the UART baud rate to the closest achievable baud rate. Return the number of clock ticks per UART bit.
+ * @brief Set the UART controller clock divider, which determines the baud rate of the UART.
  *
- * The baud rate is adjusted to the closest achievable baud rate by setting the UART baud rate register to the number of
- * clock ticks per UART bit, which is calculated as follows:
+ * The UART baud rate will be equal to the RVX clock frequency divided by the clock divider.
  *
- *  `clock_ticks_per_bit = rvx_clock_frequency / baud_rate`
+ * `uart_baud_rate = rvx_clock_frequency / clock_divider`
  *
- * In the formula above, `rvx_clock_frequency` is the clock frequency value provided when initializing the RVX system
- * with `rvx_init()`.
+ * The `clock_divider` value must be non-zero. A value of zero will be ignored without error.
  *
- * The calculated `clock_ticks_per_bit` value is returned. A return value of `0` indicates an error, which can occur in
- * the following cases:
+ * Example usage:
+ * ```c
+ * // RVX initialization (adjust the clock frequency as needed)
+ * const RvxSetup rvx_setup = {.clock_frequency = 12000000U, .trap_handler = RVX_DEFAULT_TRAP_HANDLER};
+ * rvx_init(&rvx_setup);
  *
- * - The `baud_rate` parameter is `0`.
- *
- * - Not calling `rvx_init()` before configuring the UART baud rate, or calling it with a `clock_frequency` of `0`.
- *
- * - The requested baud rate is higher than `rvx_clock_frequency`.
- *
- * In case of an error, the UART baud rate is not changed.
- *
- * The actual baud rate of the UART may differ from the requested baud rate due to the integer division of the clock
- * frequency by the baud rate. The actual baud rate can be calculated as follows:
- *
- *  `actual_baud_rate = rvx_clock_frequency / clock_ticks_per_bit`
- *
- * In the formula above, `clock_ticks_per_bit` is the value returned after calling this function.
+ * // Set the UART clock divider to configure the baud rate to 9600 bps (12000000 / 1250 = 9600).
+ * // Macro RVX_UART0 expands to the base address of UART0: ((RvxUart *)0x40000000U).
+ * rvx_uart_set_clock_divider(RVX_UART0, 1250);
+ * ```
  *
  * @param uart Pointer to the base address of the UART registers.
- * @param baud_rate The desired baud rate (must be non-zero).
- * @return The number of clock ticks per UART bit, or `0` in case of an error.
+ * @param clock_divider The clock divider value (must be non-zero).
  */
-static inline uint32_t rvx_uart_set_baud_rate(RvxUart *uart, uint32_t baud_rate)
+static inline void rvx_uart_set_clock_divider(RvxUart *uart, uint32_t clock_divider)
 {
-  if (baud_rate == 0U)
-    return 0U;
-
-  const uint32_t clock_frequency = rvx_get_clock_frequency();
-
-  if (clock_frequency == 0U)
-    return 0U;
-
-  if (baud_rate > clock_frequency)
-    return 0U;
-
-  uint32_t clock_ticks_per_bit = clock_frequency / baud_rate;
-  uint32_t remainder = clock_frequency % baud_rate;
-  if (remainder != 0U && remainder >= (baud_rate / 2U))
-  {
-    clock_ticks_per_bit += 1U; // Round up if remainder is at least half of the baud rate
-  }
-
-  uart->RVX_UART_BAUD_REG = clock_ticks_per_bit;
-  return clock_ticks_per_bit;
+  if (clock_divider == 0U)
+    return;
+  uart->RVX_UART_BAUD_REG = clock_divider;
 }
 
 /**

@@ -71,37 +71,34 @@ static inline void rvx_spi_set_mode(RvxSpi *spi, RvxSpiMode spi_mode)
 }
 
 /**
- * @brief Set the clock divider for the SPI controller.
+ * @brief Set the clock divider for the SPI controller, which determines the SPI clock pin frequency.
  *
- * The clock divider determines the frequency of SPI communication according to the formula `sclk_freq =
- * rvx_clock_freq / clock_divider`, where `sclk_freq` is the resulting SPI clock frequency, `rvx_clock_freq` is the
- * frequency of the clock driving RVX, and `clock_divider` is the even integer value passed to this function.
+ * The `clock_divider` value must be an even integer between 2 and 65534 (inclusive). Values outside this range or odd
+ * values will be ignored without error, leaving the SPI clock unchanged.
  *
- * The `clock_divider` value must be between 2 and 65534 (inclusive).
+ * The SPI clock frequency will be equal to the RVX clock frequency divided by the `clock_divider` value:
  *
- * If a value outside the valid range is passed for `clock_divider`, it will be rounded to the nearest valid value (2 or
- * 65534) without error.
- *
- * If an odd value is passed for `clock_divider`, it will be rounded down to the nearest even integer without error.
+ * `spi_clock = rvx_clock_frequency / clock_divider`
  *
  * Example usage:
  * ```c
- * // Divide RVX clock by 12 for SPI communication.
- * // Example: if RVX clock is 12MHz, the SPI speed will be 1MHz.
+ * // RVX initialization (adjust the clock frequency as needed)
+ * const RvxSetup rvx_setup = {.clock_frequency = 12000000U, .trap_handler = RVX_DEFAULT_TRAP_HANDLER};
+ * rvx_init(&rvx_setup);
+ *
+ * // Set the clock divider to adjust the SPI clock frequency to 1 MHz (12000000 / 12 = 1000000).
  * // Macro RVX_SPI0 expands to the base address of SPI0: ((RvxSpi *)0x40003000U).
- * rvx_spi_set_divider(RVX_SPI0, 12);
+ * rvx_spi_set_clock_divider(RVX_SPI0, 12);
  * ```
  *
- * @note After reset, the `clock_divider` is set to 2 by default.
- *
  * @param spi Pointer to the base address of the SPI registers.
- * @param clock_divider Even integer between 2 and 65534 (inclusive) that determines the SCLK pin frequency.
+ * @param clock_divider Even integer between 2 and 65534 specifying the clock divider.
  */
-static inline void rvx_spi_set_divider(RvxSpi *spi, uint16_t clock_divider)
+static inline void rvx_spi_set_clock_divider(RvxSpi *spi, uint16_t clock_divider)
 {
-  if (clock_divider < 2)
-    clock_divider = 2;
-  spi->RVX_SPI_DIVIDER_REG = (uint16_t)((clock_divider) >> 1) - 1;
+  if (clock_divider < 2U || clock_divider > 65534U || clock_divider % 2U != 0U)
+    return;
+  spi->RVX_SPI_DIVIDER_REG = (clock_divider / 2U) - 1U;
 }
 
 /**
@@ -215,10 +212,12 @@ static inline void rvx_spi_write(RvxSpi *spi, const uint8_t tx_data)
  *
  * Example usage:
  * ```c
- * // Initialize SPI controller in mode 0 and set speed to 1/12 of the RVX clock frequency.
- * // Macro RVX_SPI0 expands to the base address of SPI0: ((RvxSpi *)0x40003000U).
- * rvx_spi_set_mode(RVX_SPI0, RVX_SPI_MODE_0);
- * rvx_spi_set_divider(RVX_SPI0, 12);
+ * // RVX initialization (adjust the clock frequency as needed)
+ * const RvxSetup rvx_setup = {.clock_frequency = 12000000U, .trap_handler = RVX_DEFAULT_TRAP_HANDLER};
+ * rvx_init(&rvx_setup);
+ *
+ * // Set the SPI clock divider to configure the SPI clock frequency to 1 MHz (12000000 / 12 = 1000000).
+ * rvx_spi_set_clock_divider(RVX_SPI0, 12);
  *
  * // Transmit 0xAB to a subordinate device connected to the CS line controlled
  * // by the SPI controller and receive a byte simultaneously.
