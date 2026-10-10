@@ -8,8 +8,8 @@
 #error "Unsupported XLEN"
 #endif
 
-#include "rvx_csr.h"
 #include "rvx_macros.h"
+#include "rvx_setup.h"
 
 #define RVX_UART_STATUS_TX_READY_MASK 0x1U ///< UART transmit-ready status bit.
 #define RVX_UART_STATUS_RX_READY_MASK 0x2U ///< UART receive-ready status bit.
@@ -41,33 +41,39 @@ typedef struct RVX_ALIGNED RvxUart
  * The baud rate is adjusted to the closest achievable baud rate by setting the UART baud rate register to the number of
  * clock ticks per UART bit, which is calculated as follows:
  *
- *  `clock_ticks_per_bit = clock_frequency / baud_rate`
+ *  `clock_ticks_per_bit = rvx_clock_frequency / baud_rate`
+ *
+ * In the formula above, `rvx_clock_frequency` is the clock frequency value provided when initializing the RVX system
+ * with `rvx_init()`.
  *
  * The calculated `clock_ticks_per_bit` value is returned. A return value of `0` indicates an error, which can occur in
  * the following cases:
  *
  * - The `baud_rate` parameter is `0`.
  *
- * - The `clock_frequency` parameter is `0`.
+ * - Not calling `rvx_init()` before configuring the UART baud rate, or calling it with a `clock_frequency` of `0`.
  *
- * - The requested baud rate is higher than the `clock_frequency`.
+ * - The requested baud rate is higher than `rvx_clock_frequency`.
  *
  * In case of an error, the UART baud rate is not changed.
  *
  * The actual baud rate of the UART may differ from the requested baud rate due to the integer division of the clock
  * frequency by the baud rate. The actual baud rate can be calculated as follows:
  *
- *  `actual_baud_rate = clock_frequency / clock_ticks_per_bit`
+ *  `actual_baud_rate = rvx_clock_frequency / clock_ticks_per_bit`
+ *
+ * In the formula above, `clock_ticks_per_bit` is the value returned after calling this function.
  *
  * @param uart Pointer to the base address of the UART registers.
  * @param baud_rate The desired baud rate (must be non-zero).
- * @param clock_frequency The RVX clock frequency (must be non-zero).
  * @return The number of clock ticks per UART bit, or `0` in case of an error.
  */
-static inline uint32_t rvx_uart_set_baud_rate(RvxUart *uart, uint32_t baud_rate, uint32_t clock_frequency)
+static inline uint32_t rvx_uart_set_baud_rate(RvxUart *uart, uint32_t baud_rate)
 {
   if (baud_rate == 0U)
     return 0U;
+
+  const uint32_t clock_frequency = rvx_get_clock_frequency();
 
   if (clock_frequency == 0U)
     return 0U;

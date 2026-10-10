@@ -14,6 +14,7 @@
 #include "rvx_irq.h"
 #include "rvx_macros.h"
 #include "rvx_plic.h"
+#include "rvx_setup.h"
 #include "rvx_spi.h"
 #include "rvx_timer.h"
 #include "rvx_trap.h"
