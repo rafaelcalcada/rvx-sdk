@@ -29,15 +29,15 @@ typedef enum RvxI2cCommand
 } RvxI2cCommand;
 
 /**
- * @brief Structure representing the I2C controller registers.
+ * @brief Structure representing the I2C controller register block.
  *
  * The fields are laid out in the same order as the hardware registers, allowing direct access through a pointer.
  *
  * For example:
  *
  * ```c
- * // Macro RVX_I2C0 expands to the base address of I2C0: ((RvxI2c *)0x40004000U).
- * uint32_t status = RVX_I2C0->RVX_I2C_STATUS_REG; // Read the status register of I2C0.
+ * RvxI2c *rvx_i2c0_base = (RvxI2c *)0x40004000U;
+ * uint32_t status = rvx_i2c0_base->RVX_I2C_STATUS_REG; // Read the status register of I2C0.
  * ```
  */
 typedef struct RVX_ALIGNED RvxI2c
@@ -65,10 +65,11 @@ typedef struct RVX_ALIGNED RvxI2c
  * rvx_init(&rvx_setup);
  *
  * // Set the I2C clock divider to configure the I2C clock frequency to 100 kHz (12000000 / 120 = 100000).
- * // Macro RVX_I2C0 expands to the base address of I2C0: ((RvxI2c *)0x40004000U).
- * rvx_i2c_set_clock_divider(RVX_I2C0, 120);
+ * rvx_i2c_set_clock_divider(RVX_I2C0_BASE, 120);
  * ```
  *
+ * @param i2c Base address of the I2C controller register block.
+ * @param clock_divider Even integer between 2 and 65534 specifying the clock divider.
  */
 static inline void rvx_i2c_set_clock_divider(RvxI2c *i2c, uint16_t clock_divider)
 {
@@ -101,10 +102,10 @@ static inline void rvx_i2c_set_clock_divider(RvxI2c *i2c, uint16_t clock_divider
  * uint8_t target_address = 0x52;
  *
  * // Send the data buffer.
- * bool success = rvx_i2c_write(RVX_I2C0, target_address, tx_buffer, sizeof(tx_buffer));
+ * bool success = rvx_i2c_write(RVX_I2C0_BASE, target_address, tx_buffer, sizeof(tx_buffer));
  * ```
  *
- * @param i2c Pointer to the base address of the I2C registers.
+ * @param i2c Base address of the I2C controller register block.
  * @param target_address 7-bit I2C address of the target device (without the R/W bit).
  * @param tx_buffer Pointer to the data buffer to be sent.
  * @param tx_length Number of bytes to be sent from the data buffer.
@@ -135,10 +136,10 @@ bool rvx_i2c_write(RvxI2c *i2c, uint8_t target_address, const uint8_t *tx_buffer
  * uint8_t target_address = 0x52;
  *
  * // Read data into the buffer.
- * bool success = rvx_i2c_read(RVX_I2C0, target_address, rx_buffer, sizeof(rx_buffer));
+ * bool success = rvx_i2c_read(RVX_I2C0_BASE, target_address, rx_buffer, sizeof(rx_buffer));
  * ```
  *
- * @param i2c Pointer to the base address of the I2C registers.
+ * @param i2c Base address of the I2C controller register block.
  * @param target_address 7-bit I2C address of the target device (without the R/W bit).
  * @param rx_buffer Pointer to the buffer where received data will be stored.
  * @param rx_length Number of bytes to be read into the buffer.
@@ -171,10 +172,10 @@ bool rvx_i2c_read(RvxI2c *i2c, uint8_t target_address, uint8_t *rx_buffer, size_
  * uint8_t target_address = 0x52;
  *
  * // Perform a write-read transaction: write 1 byte from tx_buffer, then read 6 bytes into rx_buffer.
- * bool success = rvx_i2c_write_read(RVX_I2C0, target_address, tx_buffer, 1, rx_buffer, 6);
+ * bool success = rvx_i2c_write_read(RVX_I2C0_BASE, target_address, tx_buffer, 1, rx_buffer, 6);
  * ```
  *
- * @param i2c Pointer to the base address of the I2C registers.
+ * @param i2c Base address of the I2C controller register block.
  * @param target_address 7-bit I2C address of the target device (without the R/W bit).
  * @param tx_buffer Pointer to the data buffer to be sent.
  * @param tx_length Number of bytes to be sent from the `tx_buffer`.

@@ -11,15 +11,15 @@
 #include "rvx_macros.h"
 
 /**
- * @brief Structure representing the timer controller registers.
+ * @brief Structure representing the Timer controller register block.
  *
  * The fields are laid out in the same order as the hardware registers, allowing direct access through a pointer.
  *
  * For example:
  *
  * ```c
- * // Macro RVX_TIMER0 expands to the base address of TIMER0: ((RvxTimer *)0x40001000U).
- * rvx_timer_start_counter(RVX_TIMER0);
+ * RvxTimer *rvx_timer0_base = (RvxTimer *)0x40001000U;
+ * rvx_timer_start_counter(rvx_timer0_base);
  * ```
  */
 typedef struct RVX_ALIGNED RvxTimer
@@ -38,11 +38,11 @@ typedef struct RVX_ALIGNED RvxTimer
  *
  * ```c
  * // Start the TIMER0 counter.
- * // Macro RVX_TIMER0 expands to the base address of TIMER0: ((RvxTimer *)0x40001000U).
- * rvx_timer_start_counter(RVX_TIMER0);
+ * // Macro RVX_TIMER0_BASE expands to the base address of TIMER0: ((RvxTimer *)0x40001000U).
+ * rvx_timer_start_counter(RVX_TIMER0_BASE);
  * ```
  *
- * @param timer Pointer to the base address of the timer registers.
+ * @param timer Base address of the Timer controller register block.
  */
 static inline void rvx_timer_start_counter(RvxTimer *timer)
 {
@@ -56,11 +56,10 @@ static inline void rvx_timer_start_counter(RvxTimer *timer)
  *
  * ```c
  * // Stop the TIMER0 counter.
- * // Macro RVX_TIMER0 expands to the base address of TIMER0: ((RvxTimer *)0x40001000U).
- * rvx_timer_stop_counter(RVX_TIMER0);
+ * rvx_timer_stop_counter(RVX_TIMER0_BASE);
  * ```
  *
- * @param timer Pointer to the base address of the timer registers.
+ * @param timer Base address of the Timer controller register block.
  */
 static inline void rvx_timer_stop_counter(RvxTimer *timer)
 {
@@ -74,11 +73,10 @@ static inline void rvx_timer_stop_counter(RvxTimer *timer)
  *
  * ```c
  * // Check whether the TIMER0 counter is running.
- * // Macro RVX_TIMER0 expands to the base address of TIMER0: ((RvxTimer *)0x40001000U).
- * bool timer_is_running = rvx_timer_is_counting(RVX_TIMER0);
+ * bool timer_is_running = rvx_timer_is_counting(RVX_TIMER0_BASE);
  * ```
  *
- * @param timer Pointer to the base address of the timer registers.
+ * @param timer Base address of the Timer controller register block.
  * @return `true` if the timer counter is running (counting), `false` otherwise.
  */
 static inline bool rvx_timer_is_counting(RvxTimer *timer)
@@ -95,11 +93,10 @@ static inline bool rvx_timer_is_counting(RvxTimer *timer)
  *
  * ```c
  * // Set the TIMER0 counter to one million.
- * // Macro RVX_TIMER0 expands to the base address of TIMER0: ((RvxTimer *)0x40001000U).
- * rvx_timer_set_counter(RVX_TIMER0, 1000000U);
+ * rvx_timer_set_counter(RVX_TIMER0_BASE, 1000000U);
  * ```
  *
- * @param timer Pointer to the base address of the timer registers.
+ * @param timer Base address of the Timer controller register block.
  * @param counter_value 64-bit value to assign to the timer counter.
  */
 static inline void rvx_timer_set_counter(RvxTimer *timer, uint64_t counter_value)
@@ -118,11 +115,10 @@ static inline void rvx_timer_set_counter(RvxTimer *timer, uint64_t counter_value
  *
  * ```c
  * // Reset the TIMER0 counter to zero.
- * // Macro RVX_TIMER0 expands to the base address of TIMER0: ((RvxTimer *)0x40001000U).
- * rvx_timer_reset_counter(RVX_TIMER0);
+ * rvx_timer_reset_counter(RVX_TIMER0_BASE);
  * ```
  *
- * @param timer Pointer to the base address of the timer registers.
+ * @param timer Base address of the Timer controller register block.
  */
 static inline void rvx_timer_reset_counter(RvxTimer *timer)
 {
@@ -138,11 +134,10 @@ static inline void rvx_timer_reset_counter(RvxTimer *timer)
  *
  * ```c
  * // Read the current TIMER0 counter value.
- * // Macro RVX_TIMER0 expands to the base address of TIMER0: ((RvxTimer *)0x40001000U).
- * uint64_t counter_value = rvx_timer_get_counter(RVX_TIMER0);
+ * uint64_t counter_value = rvx_timer_get_counter(RVX_TIMER0_BASE);
  * ```
  *
- * @param timer Pointer to the base address of the timer registers.
+ * @param timer Base address of the Timer controller register block.
  * @return 64-bit value representing the current timer count.
  */
 static inline uint64_t rvx_timer_get_counter(RvxTimer *timer)
@@ -167,11 +162,10 @@ static inline uint64_t rvx_timer_get_counter(RvxTimer *timer)
  *
  * ```c
  * // Trigger the timer interrupt when TIMER0 reaches twelve million clock cycles.
- * // Macro RVX_TIMER0 expands to the base address of TIMER0: ((RvxTimer *)0x40001000U).
- * rvx_timer_set_compare(RVX_TIMER0, 12000000U);
+ * rvx_timer_set_compare(RVX_TIMER0_BASE, 12000000U);
  * ```
  *
- * @param timer Pointer to the base address of the timer registers.
+ * @param timer Base address of the Timer controller register block.
  * @param compare_value 64-bit value to assign to the compare register.
  */
 static inline void rvx_timer_set_compare(RvxTimer *timer, uint64_t compare_value)
@@ -188,11 +182,10 @@ static inline void rvx_timer_set_compare(RvxTimer *timer, uint64_t compare_value
  *
  * ```c
  * // Read the TIMER0 compare value.
- * // Macro RVX_TIMER0 expands to the base address of TIMER0: ((RvxTimer *)0x40001000U).
- * uint64_t compare_value = rvx_timer_get_compare(RVX_TIMER0);
+ * uint64_t compare_value = rvx_timer_get_compare(RVX_TIMER0_BASE);
  * ```
  *
- * @param timer Pointer to the base address of the timer registers.
+ * @param timer Base address of the Timer controller register block.
  * @return 64-bit value representing the current timer compare value.
  */
 static inline uint64_t rvx_timer_get_compare(RvxTimer *timer)

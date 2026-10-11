@@ -17,15 +17,15 @@
 #define RVX_PLIC_MAX_PRIORITY 15U
 
 /**
- * @brief Structure representing the PLIC controller registers.
+ * @brief Structure representing the PLIC controller register block.
  *
  * The fields are laid out in the same order as the hardware registers, allowing direct access through a pointer.
  *
  * For example:
  *
  * ```c
- * // Macro RVX_PLIC0 expands to the base address of PLIC0: ((RvxPlic *)0x40005000U).
- * rvx_plic_enable_source(RVX_PLIC0, 2);
+ * RvxPlic *rvx_plic0_base = (RvxPlic *)0x40005000U;
+ * rvx_plic_enable_source(rvx_plic0_base, 2); // Enable interrupt source 2.
  * ```
  */
 typedef struct RVX_ALIGNED RvxPlic
@@ -45,11 +45,10 @@ typedef struct RVX_ALIGNED RvxPlic
  * Example usage:
  * ```c
  * // Assign the highest priority to interrupt source 2.
- * // Macro RVX_PLIC0 expands to the base address of PLIC0: ((RvxPlic *)0x40005000U).
- * rvx_plic_set_priority(RVX_PLIC0, 2, RVX_PLIC_MAX_PRIORITY);
+ * rvx_plic_set_priority(RVX_PLIC0_BASE, 2, RVX_PLIC_MAX_PRIORITY);
  * ```
  *
- * @param plic Pointer to the base address of the PLIC registers.
+ * @param plic Base address of the PLIC controller register block.
  * @param source_id Interrupt source ID in the range 1 to `RVX_PLIC_SOURCE_COUNT`.
  * @param priority Priority value in the range 0 to `RVX_PLIC_MAX_PRIORITY`. Invalid values are ignored.
  */
@@ -63,7 +62,7 @@ static inline void rvx_plic_set_priority(RvxPlic *plic, const uint8_t source_id,
 /**
  * @brief Read the priority currently assigned to an interrupt source.
  *
- * @param plic Pointer to the base address of the PLIC registers.
+ * @param plic Base address of the PLIC controller register block.
  * @param source_id Interrupt source ID in the range 1 to `RVX_PLIC_SOURCE_COUNT`.
  * @return The priority value (0-15) currently assigned to the source.
  */
@@ -80,11 +79,10 @@ static inline uint8_t rvx_plic_get_priority(RvxPlic *plic, const uint8_t source_
  * Example usage:
  * ```c
  * // Enable interrupt source 2.
- * // Macro RVX_PLIC0 expands to the base address of PLIC0: ((RvxPlic *)0x40005000U).
- * rvx_plic_enable_source(RVX_PLIC0, 2);
+ * rvx_plic_enable_source(RVX_PLIC0_BASE, 2);
  * ```
  *
- * @param plic Pointer to the base address of the PLIC registers.
+ * @param plic Base address of the PLIC controller register block.
  * @param source_id Interrupt source ID in the range 1 to `RVX_PLIC_SOURCE_COUNT`.
  */
 static inline void rvx_plic_enable_source(RvxPlic *plic, const uint8_t source_id)
@@ -100,11 +98,10 @@ static inline void rvx_plic_enable_source(RvxPlic *plic, const uint8_t source_id
  * Example usage:
  * ```c
  * // Disable interrupt source 2.
- * // Macro RVX_PLIC0 expands to the base address of PLIC0: ((RvxPlic *)0x40005000U).
- * rvx_plic_disable_source(RVX_PLIC0, 2);
+ * rvx_plic_disable_source(RVX_PLIC0_BASE, 2);
  * ```
  *
- * @param plic Pointer to the base address of the PLIC registers.
+ * @param plic Base address of the PLIC controller register block.
  * @param source_id Interrupt source ID in the range 1 to `RVX_PLIC_SOURCE_COUNT`.
  */
 static inline void rvx_plic_disable_source(RvxPlic *plic, const uint8_t source_id)
@@ -117,7 +114,7 @@ static inline void rvx_plic_disable_source(RvxPlic *plic, const uint8_t source_i
 /**
  * @brief Return `true` if a specific interrupt source is enabled, or `false` otherwise.
  *
- * @param plic Pointer to the base address of the PLIC registers.
+ * @param plic Base address of the PLIC controller register block.
  * @param source_id Interrupt source ID in the range 1 to `RVX_PLIC_SOURCE_COUNT`.
  * @return `true` if the source is enabled, `false` otherwise.
  */
@@ -133,15 +130,14 @@ static inline bool rvx_plic_is_source_enabled(RvxPlic *plic, const uint8_t sourc
  *
  * Example usage:
  * ```c
- * // Macro RVX_PLIC0 expands to the base address of PLIC0: ((RvxPlic *)0x40005000U).
- * const uint8_t source_id = rvx_plic_claim_source(RVX_PLIC0);
+ * const uint8_t source_id = rvx_plic_claim_source(RVX_PLIC0_BASE);
  * if (source_id != 0U)
  * {
  *   // Handle the interrupt raised by `source_id`.
  * }
  * ```
  *
- * @param plic Pointer to the base address of the PLIC registers.
+ * @param plic Base address of the PLIC controller register block.
  * @return The winning source ID (1-16), or 0 if no enabled source is pending.
  */
 static inline uint8_t rvx_plic_claim_source(RvxPlic *plic)

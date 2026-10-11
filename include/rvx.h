@@ -20,14 +20,16 @@
 #include "rvx_trap.h"
 #include "rvx_uart.h"
 
-// RVX Memory Map
-#define RVX_UART0 ((RvxUart *)0x40000000U)
-#define RVX_TIMER0 ((RvxTimer *)0x40001000U)
-#define RVX_GPIO0 ((RvxGpio *)0x40002000U)
-#define RVX_SPI0 ((RvxSpi *)0x40003000U)
-#define RVX_I2C0 ((RvxI2c *)0x40004000U)
-#define RVX_PLIC0 ((RvxPlic *)0x40005000U)
+/// @name RVX Memory Map
+/// @{
+#define RVX_UART0_BASE ((RvxUart *)0x40000000U)   ///< Base address of UART0 controller register block.
+#define RVX_TIMER0_BASE ((RvxTimer *)0x40001000U) ///< Base address of TIMER0 controller register block.
+#define RVX_GPIO0_BASE ((RvxGpio *)0x40002000U)   ///< Base address of GPIO0 controller register block.
+#define RVX_SPI0_BASE ((RvxSpi *)0x40003000U)     ///< Base address of SPI0 controller register block.
+#define RVX_I2C0_BASE ((RvxI2c *)0x40004000U)     ///< Base address of I2C0 controller register block.
+#define RVX_PLIC0_BASE ((RvxPlic *)0x40005000U)   ///< Base address of PLIC0 controller register block.
+/// @}
 
-#define RVX_PLIC0_SOURCE_UART0 1U ///< Source ID for the UART0 interrupt in the PLIC0
+#define RVX_PLIC0_SOURCE_UART0 1U ///< Source ID for the UART0 interrupt.
 
 #endif // __RVX_H
