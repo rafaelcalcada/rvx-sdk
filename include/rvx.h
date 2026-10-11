@@ -8,16 +8,16 @@
 #error "Unsupported XLEN"
 #endif
 
+#include "rvx_cause.h"
 #include "rvx_csr.h"
 #include "rvx_gpio.h"
 #include "rvx_i2c.h"
-#include "rvx_irq.h"
+#include "rvx_interrupt.h"
 #include "rvx_macros.h"
 #include "rvx_plic.h"
 #include "rvx_setup.h"
 #include "rvx_spi.h"
 #include "rvx_timer.h"
-#include "rvx_trap.h"
 #include "rvx_uart.h"
 
 /// @name RVX Memory Map
@@ -30,6 +30,7 @@
 #define RVX_PLIC0_BASE ((RvxPlic *)0x40005000U)   ///< Base address of PLIC0 controller register block.
 /// @}
 
-#define RVX_PLIC0_SOURCE_UART0 1U ///< Source ID for the UART0 interrupt.
+#define RVX_PLIC0_SOURCE_UART0 1U  ///< Source ID for the UART0 interrupt.
+#define RVX_PLIC0_SOURCE_TIMER0 2U ///< Source ID for the TIMER0 interrupt.
 
 #endif // __RVX_H
