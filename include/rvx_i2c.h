@@ -14,9 +14,8 @@
 /// @{
 #define RVX_I2C_STATUS_RUN_MASK (1U << 0U) ///< I2C transaction-in-progress status bit.
 #define RVX_I2C_STATUS_ACK_MASK (1U << 1U) ///< I2C acknowledge status bit.
-#define RVX_I2C_STATUS_IRQ_MASK (1U << 2U) ///< I2C interrupt status bit.
-#define RVX_I2C_STATUS_SDA_MASK (1U << 3U) ///< I2C SDA line status bit.
-#define RVX_I2C_STATUS_SCL_MASK (1U << 4U) ///< I2C SCL line status bit.
+#define RVX_I2C_STATUS_SDA_MASK (1U << 2U) ///< I2C SDA line status bit.
+#define RVX_I2C_STATUS_SCL_MASK (1U << 3U) ///< I2C SCL line status bit.
 /// @}
 
 /// The I2C command.
