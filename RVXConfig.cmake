@@ -2,8 +2,6 @@
 # Copyright (c) 2020-2026 RVX Project Contributors
 
 set(RVX_INCLUDE_DIR "${CMAKE_CURRENT_LIST_DIR}/include")
-set(RVX_STARTUP_DIR "${CMAKE_CURRENT_LIST_DIR}/startup")
-set(RVX_LINKER_DIR "${CMAKE_CURRENT_LIST_DIR}/ld")
 set(RVX_SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/source")
 
 if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
@@ -71,12 +69,13 @@ target_link_options(rvx_sdk INTERFACE
   "-march=${RVX_ARCH}"
   "-Wl,--defsym=__rvx_ram_size=${RVX_RAM_SIZE_IN_BYTES}"
   "-Wl,--defsym=__rvx_min_free_space=${RVX_MIN_FREE_SPACE_IN_BYTES}"
-  "-T${RVX_LINKER_DIR}/rvx.ld"
+  "-T${CMAKE_CURRENT_LIST_DIR}/rvx.ld"
 )
 
 target_sources(rvx_sdk INTERFACE
-  "${RVX_STARTUP_DIR}/rvx_startup.S"
+  "${RVX_SOURCE_DIR}/rvx_startup.S"
   "${RVX_SOURCE_DIR}/rvx_i2c.c"
+  "${RVX_SOURCE_DIR}/rvx_trap.c"
 )
 
 function(rvx_generate_boot_image TARGET_NAME)

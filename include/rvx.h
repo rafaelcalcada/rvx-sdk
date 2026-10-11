@@ -28,4 +28,6 @@
 #define RVX_I2C0 ((RvxI2c *)0x40004000U)
 #define RVX_PLIC0 ((RvxPlic *)0x40005000U)
 
+#define RVX_PLIC0_SOURCE_UART0 1U ///< Source ID for the UART0 interrupt in the PLIC0
+
 #endif // __RVX_H

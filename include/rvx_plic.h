@@ -16,9 +16,6 @@
 /// Maximum priority value that can be assigned to an interrupt source.
 #define RVX_PLIC_MAX_PRIORITY 15U
 
-/// Bit index of the "interrupt pending" flag within the PLIC claim register.
-#define RVX_PLIC_CLAIM_PENDING_BIT 4U
-
 /**
  * @brief Structure representing the PLIC controller registers.
  *
@@ -33,10 +30,10 @@
  */
 typedef struct RVX_ALIGNED RvxPlic
 {
-  volatile uint32_t RVX_PLIC_PRIORITY_REG[RVX_PLIC_SOURCE_COUNT]; ///< RVX PLIC Priority Registers (one per source).
-  volatile uint32_t RVX_PLIC_ENABLE_REG;                          ///< RVX PLIC Enable Register.
-  volatile uint32_t RVX_PLIC_PENDING_REG;                         ///< RVX PLIC Pending Register.
-  volatile uint32_t RVX_PLIC_CLAIM_REG;                           ///< RVX PLIC Claim Register.
+  volatile uint32_t RVX_PLIC_PRIORITY_REG[RVX_PLIC_SOURCE_COUNT]; ///< Priority registers for each interrupt source
+  volatile uint32_t RVX_PLIC_ENABLE_REG;                          ///< Enable register
+  volatile uint32_t RVX_PLIC_PENDING_REG;                         ///< Pending register
+  volatile uint32_t RVX_PLIC_CLAIM_REG;                           ///< Claim register
 } RvxPlic;
 
 /**
@@ -53,28 +50,28 @@ typedef struct RVX_ALIGNED RvxPlic
  * ```
  *
  * @param plic Pointer to the base address of the PLIC registers.
- * @param source_id Interrupt source index in the range 0 to `RVX_PLIC_SOURCE_COUNT - 1`.
+ * @param source_id Interrupt source ID in the range 1 to `RVX_PLIC_SOURCE_COUNT`.
  * @param priority Priority value in the range 0 to `RVX_PLIC_MAX_PRIORITY`. Invalid values are ignored.
  */
 static inline void rvx_plic_set_priority(RvxPlic *plic, const uint8_t source_id, const uint8_t priority)
 {
-  if (source_id >= RVX_PLIC_SOURCE_COUNT || priority > RVX_PLIC_MAX_PRIORITY)
+  if (source_id < 1U || source_id > RVX_PLIC_SOURCE_COUNT || priority > RVX_PLIC_MAX_PRIORITY)
     return;
-  plic->RVX_PLIC_PRIORITY_REG[source_id] = priority;
+  plic->RVX_PLIC_PRIORITY_REG[source_id - 1U] = priority;
 }
 
 /**
  * @brief Read the priority currently assigned to an interrupt source.
  *
  * @param plic Pointer to the base address of the PLIC registers.
- * @param source_id Interrupt source index in the range 0 to `RVX_PLIC_SOURCE_COUNT - 1`.
+ * @param source_id Interrupt source ID in the range 1 to `RVX_PLIC_SOURCE_COUNT`.
  * @return The priority value (0-15) currently assigned to the source.
  */
 static inline uint8_t rvx_plic_get_priority(RvxPlic *plic, const uint8_t source_id)
 {
-  if (source_id >= RVX_PLIC_SOURCE_COUNT)
+  if (source_id < 1U || source_id > RVX_PLIC_SOURCE_COUNT)
     return 0U;
-  return (uint8_t)plic->RVX_PLIC_PRIORITY_REG[source_id];
+  return (uint8_t)plic->RVX_PLIC_PRIORITY_REG[source_id - 1U];
 }
 
 /**
@@ -88,13 +85,13 @@ static inline uint8_t rvx_plic_get_priority(RvxPlic *plic, const uint8_t source_
  * ```
  *
  * @param plic Pointer to the base address of the PLIC registers.
- * @param source_id Interrupt source index in the range 0 to `RVX_PLIC_SOURCE_COUNT - 1`.
+ * @param source_id Interrupt source ID in the range 1 to `RVX_PLIC_SOURCE_COUNT`.
  */
 static inline void rvx_plic_enable_source(RvxPlic *plic, const uint8_t source_id)
 {
-  if (source_id >= RVX_PLIC_SOURCE_COUNT)
+  if (source_id < 1U || source_id > RVX_PLIC_SOURCE_COUNT)
     return;
-  RVX_SET_BIT(plic->RVX_PLIC_ENABLE_REG, source_id);
+  RVX_SET_BIT(plic->RVX_PLIC_ENABLE_REG, source_id - 1U);
 }
 
 /**
@@ -108,61 +105,48 @@ static inline void rvx_plic_enable_source(RvxPlic *plic, const uint8_t source_id
  * ```
  *
  * @param plic Pointer to the base address of the PLIC registers.
- * @param source_id Interrupt source index in the range 0 to `RVX_PLIC_SOURCE_COUNT - 1`.
+ * @param source_id Interrupt source ID in the range 1 to `RVX_PLIC_SOURCE_COUNT`.
  */
 static inline void rvx_plic_disable_source(RvxPlic *plic, const uint8_t source_id)
 {
-  if (source_id >= RVX_PLIC_SOURCE_COUNT)
+  if (source_id < 1U || source_id > RVX_PLIC_SOURCE_COUNT)
     return;
-  RVX_CLR_BIT(plic->RVX_PLIC_ENABLE_REG, source_id);
+  RVX_CLR_BIT(plic->RVX_PLIC_ENABLE_REG, source_id - 1U);
 }
 
 /**
  * @brief Return `true` if a specific interrupt source is enabled, or `false` otherwise.
  *
  * @param plic Pointer to the base address of the PLIC registers.
- * @param source_id Interrupt source index in the range 0 to `RVX_PLIC_SOURCE_COUNT - 1`.
+ * @param source_id Interrupt source ID in the range 1 to `RVX_PLIC_SOURCE_COUNT`.
  * @return `true` if the source is enabled, `false` otherwise.
  */
 static inline bool rvx_plic_is_source_enabled(RvxPlic *plic, const uint8_t source_id)
 {
-  if (source_id >= RVX_PLIC_SOURCE_COUNT)
+  if (source_id < 1U || source_id > RVX_PLIC_SOURCE_COUNT)
     return false;
-  return RVX_READ_BIT(plic->RVX_PLIC_ENABLE_REG, source_id);
+  return RVX_READ_BIT(plic->RVX_PLIC_ENABLE_REG, source_id - 1U);
 }
 
 /**
- * @brief Identify the interrupt source that won PLIC arbitration.
+ * @brief Claim the interrupt source that won PLIC arbitration.
  *
  * Example usage:
  * ```c
- * uint8_t source_id;
  * // Macro RVX_PLIC0 expands to the base address of PLIC0: ((RvxPlic *)0x40005000U).
- * if (rvx_plic_claim_source(RVX_PLIC0, &source_id))
+ * const uint8_t source_id = rvx_plic_claim_source(RVX_PLIC0);
+ * if (source_id != 0U)
  * {
  *   // Handle the interrupt raised by `source_id`.
  * }
  * ```
  *
  * @param plic Pointer to the base address of the PLIC registers.
- * @param source_id Set to the index (0-15) of the winning interrupt source if one is pending.
- * @return `true` if an interrupt source is pending, `false` otherwise (in which case `*source_id` is left
- * unmodified).
+ * @return The winning source ID (1-16), or 0 if no enabled source is pending.
  */
-static inline bool rvx_plic_claim_source(RvxPlic *plic, uint8_t *source_id)
+static inline uint8_t rvx_plic_claim_source(RvxPlic *plic)
 {
-  if (source_id == NULL)
-    return false;
-
-  uint32_t claim = plic->RVX_PLIC_CLAIM_REG;
-
-  if (!RVX_READ_BIT(claim, RVX_PLIC_CLAIM_PENDING_BIT))
-  {
-    return false;
-  }
-
-  *source_id = (uint8_t)(claim & 0xFU);
-  return true;
+  return (uint8_t)(plic->RVX_PLIC_CLAIM_REG & 0x1FU);
 }
 
 #endif // __RVX_PLIC_H
