@@ -65,7 +65,7 @@ typedef struct RVX_ALIGNED RvxI2c
  * rvx_init(&rvx_setup);
  *
  * // Set the I2C clock divider to configure the I2C clock frequency to 100 kHz (12000000 / 120 = 100000).
- * rvx_i2c_set_clock_divider(RVX_I2C0_BASE, 120);
+ * rvx_i2c_set_clock_divider(RVX_I2C0, 120);
  * ```
  *
  * @param i2c Base address of the I2C controller register block.
@@ -102,7 +102,7 @@ static inline void rvx_i2c_set_clock_divider(RvxI2c *i2c, uint16_t clock_divider
  * uint8_t target_address = 0x52;
  *
  * // Send the data buffer.
- * bool success = rvx_i2c_write(RVX_I2C0_BASE, target_address, tx_buffer, sizeof(tx_buffer));
+ * bool success = rvx_i2c_write(RVX_I2C0, target_address, tx_buffer, sizeof(tx_buffer));
  * ```
  *
  * @param i2c Base address of the I2C controller register block.
@@ -136,7 +136,7 @@ bool rvx_i2c_write(RvxI2c *i2c, uint8_t target_address, const uint8_t *tx_buffer
  * uint8_t target_address = 0x52;
  *
  * // Read data into the buffer.
- * bool success = rvx_i2c_read(RVX_I2C0_BASE, target_address, rx_buffer, sizeof(rx_buffer));
+ * bool success = rvx_i2c_read(RVX_I2C0, target_address, rx_buffer, sizeof(rx_buffer));
  * ```
  *
  * @param i2c Base address of the I2C controller register block.
@@ -172,7 +172,7 @@ bool rvx_i2c_read(RvxI2c *i2c, uint8_t target_address, uint8_t *rx_buffer, size_
  * uint8_t target_address = 0x52;
  *
  * // Perform a write-read transaction: write 1 byte from tx_buffer, then read 6 bytes into rx_buffer.
- * bool success = rvx_i2c_write_read(RVX_I2C0_BASE, target_address, tx_buffer, 1, rx_buffer, 6);
+ * bool success = rvx_i2c_write_read(RVX_I2C0, target_address, tx_buffer, 1, rx_buffer, 6);
  * ```
  *
  * @param i2c Base address of the I2C controller register block.

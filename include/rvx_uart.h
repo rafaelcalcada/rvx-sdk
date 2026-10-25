@@ -50,8 +50,8 @@ typedef struct RVX_ALIGNED RvxUart
  * rvx_init(&rvx_setup);
  *
  * // Set the UART clock divider to configure the baud rate to 9600 bps (12000000 / 1250 = 9600).
- * // Macro RVX_UART0_BASE expands to the base address of UART0: ((RvxUart *)0x40000000U).
- * rvx_uart_set_clock_divider(RVX_UART0_BASE, 1250);
+ * // Macro RVX_UART0 expands to the base address of UART0: ((RvxUart *)0x40000000U).
+ * rvx_uart_set_clock_divider(RVX_UART0, 1250);
  * ```
  *
  * @param uart Base address of the UART controller register block.
@@ -71,8 +71,8 @@ static inline void rvx_uart_set_clock_divider(RvxUart *uart, uint32_t clock_divi
  *
  * ```c
  * // Wait until the UART is ready to transmit a new byte, then send it.
- * while (!rvx_uart_tx_ready(RVX_UART0_BASE));
- * rvx_uart_write(RVX_UART0_BASE, 0x55);
+ * while (!rvx_uart_tx_ready(RVX_UART0));
+ * rvx_uart_write(RVX_UART0, 0x55);
  * ```
  *
  * @param uart Base address of the UART controller register block.
@@ -90,8 +90,8 @@ static inline bool rvx_uart_tx_ready(RvxUart *uart)
  *
  * ```c
  * // Wait until a new byte is received, then read it.
- * while (!rvx_uart_rx_ready(RVX_UART0_BASE));
- * uint8_t rx_data = rvx_uart_read(RVX_UART0_BASE);
+ * while (!rvx_uart_rx_ready(RVX_UART0));
+ * uint8_t rx_data = rvx_uart_read(RVX_UART0);
  * ```
  *
  * @param uart Base address of the UART controller register block.
@@ -114,8 +114,8 @@ static inline bool rvx_uart_rx_ready(RvxUart *uart)
  * Example usage:
  * ```c
  * // Wait until a new byte is received, then read it.
- * while (!rvx_uart_rx_ready(RVX_UART0_BASE));
- * uint8_t rx_data = rvx_uart_read(RVX_UART0_BASE);
+ * while (!rvx_uart_rx_ready(RVX_UART0));
+ * uint8_t rx_data = rvx_uart_read(RVX_UART0);
  * ```
  *
  * @param uart Base address of the UART controller register block.
@@ -140,8 +140,8 @@ static inline uint8_t rvx_uart_read(RvxUart *uart)
  *
  * ```c
  * // Wait until the UART is ready to transmit, then send a byte.
- * while (!rvx_uart_tx_ready(RVX_UART0_BASE));
- * rvx_uart_write(RVX_UART0_BASE, 0x55);
+ * while (!rvx_uart_tx_ready(RVX_UART0));
+ * rvx_uart_write(RVX_UART0, 0x55);
  * ```
  *
  * @param uart Base address of the UART controller register block.
@@ -165,7 +165,7 @@ static inline void rvx_uart_write(RvxUart *uart, uint8_t tx_data)
  * ```c
  * // Send "Hello, UART!" over UART0.
  * // The call below will block until the entire string is transmitted.
- * rvx_uart_print(RVX_UART0_BASE, "Hello, UART!");
+ * rvx_uart_print(RVX_UART0, "Hello, UART!");
  * ```
  *
  * @param uart Base address of the UART controller register block.
@@ -196,7 +196,7 @@ static inline void rvx_uart_print(RvxUart *uart, const char *str)
  * ```c
  * // Send "Hello, UART!" followed by a newline over UART0.
  * // The call below will block until the entire string and the newline are transmitted.
- * rvx_uart_println(RVX_UART0_BASE, "Hello, UART!");
+ * rvx_uart_println(RVX_UART0, "Hello, UART!");
  * ```
  *
  * @param uart Base address of the UART controller register block.

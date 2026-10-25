@@ -38,8 +38,8 @@ typedef struct RVX_ALIGNED RvxTimer
  *
  * ```c
  * // Start the TIMER0 counter.
- * // Macro RVX_TIMER0_BASE expands to the base address of TIMER0: ((RvxTimer *)0x40001000U).
- * rvx_timer_start_counter(RVX_TIMER0_BASE);
+ * // Macro RVX_TIMER0 expands to the base address of TIMER0: ((RvxTimer *)0x40001000U).
+ * rvx_timer_start_counter(RVX_TIMER0);
  * ```
  *
  * @param timer Base address of the Timer controller register block.
@@ -56,7 +56,7 @@ static inline void rvx_timer_start_counter(RvxTimer *timer)
  *
  * ```c
  * // Stop the TIMER0 counter.
- * rvx_timer_stop_counter(RVX_TIMER0_BASE);
+ * rvx_timer_stop_counter(RVX_TIMER0);
  * ```
  *
  * @param timer Base address of the Timer controller register block.
@@ -73,7 +73,7 @@ static inline void rvx_timer_stop_counter(RvxTimer *timer)
  *
  * ```c
  * // Check whether the TIMER0 counter is running.
- * bool timer_is_running = rvx_timer_is_counting(RVX_TIMER0_BASE);
+ * bool timer_is_running = rvx_timer_is_counting(RVX_TIMER0);
  * ```
  *
  * @param timer Base address of the Timer controller register block.
@@ -93,7 +93,7 @@ static inline bool rvx_timer_is_counting(RvxTimer *timer)
  *
  * ```c
  * // Set the TIMER0 counter to one million.
- * rvx_timer_set_counter(RVX_TIMER0_BASE, 1000000U);
+ * rvx_timer_set_counter(RVX_TIMER0, 1000000U);
  * ```
  *
  * @param timer Base address of the Timer controller register block.
@@ -115,7 +115,7 @@ static inline void rvx_timer_set_counter(RvxTimer *timer, uint64_t counter_value
  *
  * ```c
  * // Reset the TIMER0 counter to zero.
- * rvx_timer_reset_counter(RVX_TIMER0_BASE);
+ * rvx_timer_reset_counter(RVX_TIMER0);
  * ```
  *
  * @param timer Base address of the Timer controller register block.
@@ -134,7 +134,7 @@ static inline void rvx_timer_reset_counter(RvxTimer *timer)
  *
  * ```c
  * // Read the current TIMER0 counter value.
- * uint64_t counter_value = rvx_timer_get_counter(RVX_TIMER0_BASE);
+ * uint64_t counter_value = rvx_timer_get_counter(RVX_TIMER0);
  * ```
  *
  * @param timer Base address of the Timer controller register block.
@@ -162,7 +162,7 @@ static inline uint64_t rvx_timer_get_counter(RvxTimer *timer)
  *
  * ```c
  * // Trigger the timer interrupt when TIMER0 reaches twelve million clock cycles.
- * rvx_timer_set_compare(RVX_TIMER0_BASE, 12000000U);
+ * rvx_timer_set_compare(RVX_TIMER0, 12000000U);
  * ```
  *
  * @param timer Base address of the Timer controller register block.
@@ -182,7 +182,7 @@ static inline void rvx_timer_set_compare(RvxTimer *timer, uint64_t compare_value
  *
  * ```c
  * // Read the TIMER0 compare value.
- * uint64_t compare_value = rvx_timer_get_compare(RVX_TIMER0_BASE);
+ * uint64_t compare_value = rvx_timer_get_compare(RVX_TIMER0);
  * ```
  *
  * @param timer Base address of the Timer controller register block.

@@ -45,7 +45,7 @@ typedef struct RVX_ALIGNED RvxPlic
  * Example usage:
  * ```c
  * // Assign the highest priority to interrupt source 2.
- * rvx_plic_set_priority(RVX_PLIC0_BASE, 2, RVX_PLIC_MAX_PRIORITY);
+ * rvx_plic_set_priority(RVX_PLIC0, 2, RVX_PLIC_MAX_PRIORITY);
  * ```
  *
  * @param plic Base address of the PLIC controller register block.
@@ -79,7 +79,7 @@ static inline uint8_t rvx_plic_get_priority(RvxPlic *plic, const uint8_t source_
  * Example usage:
  * ```c
  * // Enable interrupt source 2.
- * rvx_plic_enable_source(RVX_PLIC0_BASE, 2);
+ * rvx_plic_enable_source(RVX_PLIC0, 2);
  * ```
  *
  * @param plic Base address of the PLIC controller register block.
@@ -98,7 +98,7 @@ static inline void rvx_plic_enable_source(RvxPlic *plic, const uint8_t source_id
  * Example usage:
  * ```c
  * // Disable interrupt source 2.
- * rvx_plic_disable_source(RVX_PLIC0_BASE, 2);
+ * rvx_plic_disable_source(RVX_PLIC0, 2);
  * ```
  *
  * @param plic Base address of the PLIC controller register block.
@@ -130,7 +130,7 @@ static inline bool rvx_plic_is_source_enabled(RvxPlic *plic, const uint8_t sourc
  *
  * Example usage:
  * ```c
- * const uint8_t source_id = rvx_plic_claim_source(RVX_PLIC0_BASE);
+ * const uint8_t source_id = rvx_plic_claim_source(RVX_PLIC0);
  * if (source_id != 0U)
  * {
  *   // Handle the interrupt raised by `source_id`.

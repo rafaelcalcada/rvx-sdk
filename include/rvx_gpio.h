@@ -54,8 +54,8 @@ typedef struct RVX_ALIGNED RvxGpio
  * Example usage:
  * ```c
  * // Configure pin 0 as output and pin 1 as input.
- * rvx_gpio_pin_direction(RVX_GPIO0_BASE, 0, RVX_GPIO_OUTPUT);
- * rvx_gpio_pin_direction(RVX_GPIO0_BASE, 1, RVX_GPIO_INPUT);
+ * rvx_gpio_pin_direction(RVX_GPIO0, 0, RVX_GPIO_OUTPUT);
+ * rvx_gpio_pin_direction(RVX_GPIO0, 1, RVX_GPIO_INPUT);
  * ```
  *
  * @param gpio Base address of the GPIO controller register block.
@@ -86,8 +86,8 @@ static inline void rvx_gpio_pin_direction(RvxGpio *gpio, const uint8_t pin_index
  * Example usage:
  * ```c
  * // Configure pin 0 as output and set it to high logic level.
- * rvx_gpio_pin_direction(RVX_GPIO0_BASE, 0, RVX_GPIO_OUTPUT);
- * rvx_gpio_pin_set(RVX_GPIO0_BASE, 0);
+ * rvx_gpio_pin_direction(RVX_GPIO0, 0, RVX_GPIO_OUTPUT);
+ * rvx_gpio_pin_set(RVX_GPIO0, 0);
  * ```
  *
  * @param gpio Base address of the GPIO controller register block.
@@ -110,8 +110,8 @@ static inline void rvx_gpio_pin_set(RvxGpio *gpio, const uint8_t pin_index)
  * Example usage:
  * ```c
  * // Configure pin 0 as output and set it to low logic level.
- * rvx_gpio_pin_direction(RVX_GPIO0_BASE, 0, RVX_GPIO_OUTPUT);
- * rvx_gpio_pin_clear(RVX_GPIO0_BASE, 0);
+ * rvx_gpio_pin_direction(RVX_GPIO0, 0, RVX_GPIO_OUTPUT);
+ * rvx_gpio_pin_clear(RVX_GPIO0, 0);
  * ```
  *
  * @param gpio Base address of the GPIO controller register block.
@@ -134,7 +134,7 @@ static inline void rvx_gpio_pin_clear(RvxGpio *gpio, const uint8_t pin_index)
  * Example usage:
  * ```c
  * // Read the logic level of pin 0.
- * RvxGpioPinLevel pin0_level = rvx_gpio_pin_read(RVX_GPIO0_BASE, 0);
+ * RvxGpioPinLevel pin0_level = rvx_gpio_pin_read(RVX_GPIO0, 0);
  * ```
  *
  * @param gpio Base address of the GPIO controller register block.
@@ -160,8 +160,8 @@ static inline RvxGpioPinLevel rvx_gpio_pin_read(RvxGpio *gpio, const uint8_t pin
  * Example usage:
  * ```c
  * // Configure pin 0 as output and drive it to high logic level (boolean true)
- * rvx_gpio_pin_direction(RVX_GPIO0_BASE, 0, RVX_GPIO_OUTPUT);
- * rvx_gpio_pin_write(RVX_GPIO0_BASE, 0, RVX_GPIO_HIGH);
+ * rvx_gpio_pin_direction(RVX_GPIO0, 0, RVX_GPIO_OUTPUT);
+ * rvx_gpio_pin_write(RVX_GPIO0, 0, RVX_GPIO_HIGH);
  * ```
  *
  * @param gpio Base address of the GPIO controller register block.
@@ -192,7 +192,7 @@ static inline void rvx_gpio_pin_write(RvxGpio *gpio, const uint8_t pin_index, Rv
  * Example usage:
  * ```c
  * // Set pins 0 and 1 as inputs, and pins 2 and 3 as outputs.
- * rvx_gpio_port_direction(RVX_GPIO0_BASE, 0b1100);
+ * rvx_gpio_port_direction(RVX_GPIO0, 0b1100);
  * ```
  *
  * @note To set the direction of a single pin, use `rvx_gpio_pin_direction()` instead.
@@ -220,8 +220,8 @@ static inline void rvx_gpio_port_direction(RvxGpio *gpio, const uint32_t directi
  * Example usage:
  * ```c
  * // Set pins 1 and 2 to high logic level, leaving all other pins unchanged.
- * rvx_gpio_port_direction(RVX_GPIO0_BASE, 0b1110);
- * rvx_gpio_port_set(RVX_GPIO0_BASE, 0b0110);
+ * rvx_gpio_port_direction(RVX_GPIO0, 0b1110);
+ * rvx_gpio_port_set(RVX_GPIO0, 0b0110);
  * ```
  *
  * @param gpio Base address of the GPIO controller register block.
@@ -248,8 +248,8 @@ static inline void rvx_gpio_port_set(RvxGpio *gpio, const uint32_t bitmask)
  * Example usage:
  * ```c
  * // Set pins 0 and 3 to low logic level, leaving all other pins unchanged.
- * rvx_gpio_port_direction(RVX_GPIO0_BASE, 0b1101);
- * rvx_gpio_port_clear(RVX_GPIO0_BASE, 0b1001);
+ * rvx_gpio_port_direction(RVX_GPIO0, 0b1101);
+ * rvx_gpio_port_clear(RVX_GPIO0, 0b1001);
  * ```
  *
  * @param gpio Base address of the GPIO controller register block.
@@ -274,7 +274,7 @@ static inline void rvx_gpio_port_clear(RvxGpio *gpio, const uint32_t bitmask)
  * Example usage:
  * ```c
  * // Read the logic levels of all pins simultaneously.
- * uint32_t pin_values = rvx_gpio_port_read(RVX_GPIO0_BASE);
+ * uint32_t pin_values = rvx_gpio_port_read(RVX_GPIO0);
  *
  * // Extract individual pin values.
  * RvxGpioPinLevel pin0_level = (pin_values >> 0) & 1;
@@ -308,8 +308,8 @@ static inline uint32_t rvx_gpio_port_read(RvxGpio *gpio)
  * Example usage:
  * ```c
  * // Set GPIO pins 0 and 2 to high, and pins 1 and 3 to low.
- * rvx_gpio_port_direction(RVX_GPIO0_BASE, 0b1111);
- * rvx_gpio_port_write(RVX_GPIO0_BASE, 0b0101);
+ * rvx_gpio_port_direction(RVX_GPIO0, 0b1111);
+ * rvx_gpio_port_write(RVX_GPIO0, 0b0101);
  * ```
  *
  * @param gpio Base address of the GPIO controller register block.

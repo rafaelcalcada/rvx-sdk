@@ -56,7 +56,7 @@ typedef struct RVX_ALIGNED RvxSpi
  * Example usage:
  * ```c
  * // Set SPI0 to mode 1 (CPOL = 0, CPHA = 1).
- * rvx_spi_set_mode(RVX_SPI0_BASE, RVX_SPI_MODE_1);
+ * rvx_spi_set_mode(RVX_SPI0, RVX_SPI_MODE_1);
  * ```
  *
  * @note After reset, the SPI controller is in mode 0 (CPOL = 0, CPHA = 0) by default.
@@ -86,7 +86,7 @@ static inline void rvx_spi_set_mode(RvxSpi *spi, RvxSpiMode spi_mode)
  * rvx_init(&rvx_setup);
  *
  * // Set the clock divider to adjust the SPI clock frequency to 1 MHz (12000000 / 12 = 1000000).
- * rvx_spi_set_clock_divider(RVX_SPI0_BASE, 12);
+ * rvx_spi_set_clock_divider(RVX_SPI0, 12);
  * ```
  *
  * @param spi Base address of the SPI controller register block.
@@ -106,8 +106,8 @@ static inline void rvx_spi_set_clock_divider(RvxSpi *spi, uint16_t clock_divider
  *
  * ```c
  * // Wait until SPI0 is ready for a new transfer, then send a byte.
- * while (!rvx_spi_ready(RVX_SPI0_BASE));
- * rvx_spi_write(RVX_SPI0_BASE, 0x55);
+ * while (!rvx_spi_ready(RVX_SPI0));
+ * rvx_spi_write(RVX_SPI0, 0x55);
  * ```
  *
  * @param spi Base address of the SPI controller register block.
@@ -157,8 +157,8 @@ static inline void rvx_spi_deassert_cs(RvxSpi *spi)
  *
  * ```c
  * // Wait for SPI0 to finish a transfer, then read the received byte.
- * while (!rvx_spi_ready(RVX_SPI0_BASE));
- * uint8_t rx_data = rvx_spi_read(RVX_SPI0_BASE);
+ * while (!rvx_spi_ready(RVX_SPI0));
+ * uint8_t rx_data = rvx_spi_read(RVX_SPI0);
  * ```
  *
  * @param spi Base address of the SPI controller register block.
@@ -184,8 +184,8 @@ static inline uint8_t rvx_spi_read(RvxSpi *spi)
  *
  * ```c
  * // Wait for SPI0 to be ready before transmitting, then send the byte.
- * while (!rvx_spi_ready(RVX_SPI0_BASE));
- * rvx_spi_write(RVX_SPI0_BASE, 0x9F);
+ * while (!rvx_spi_ready(RVX_SPI0));
+ * rvx_spi_write(RVX_SPI0, 0x9F);
  * ```
  *
  * @param spi Base address of the SPI controller register block.
@@ -212,18 +212,18 @@ static inline void rvx_spi_write(RvxSpi *spi, const uint8_t tx_data)
  * rvx_init(&rvx_setup);
  *
  * // Set the SPI clock divider to configure the SPI clock frequency to 1 MHz (12000000 / 12 = 1000000).
- * rvx_spi_set_clock_divider(RVX_SPI0_BASE, 12);
+ * rvx_spi_set_clock_divider(RVX_SPI0, 12);
  *
  * // Transmit 0xAB to a subordinate device connected to the CS line controlled
  * // by the SPI controller and receive a byte simultaneously.
- * rvx_spi_assert_cs(RVX_SPI0_BASE);
- * uint8_t received_1 = rvx_spi_transfer(RVX_SPI0_BASE, 0xAB);
- * rvx_spi_deassert_cs(RVX_SPI0_BASE);
+ * rvx_spi_assert_cs(RVX_SPI0);
+ * uint8_t received_1 = rvx_spi_transfer(RVX_SPI0, 0xAB);
+ * rvx_spi_deassert_cs(RVX_SPI0);
  *
  * // Transmit 0xCD to another subordinate device using a GPIO-controlled CS line.
- * rvx_gpio_pin_write(RVX_GPIO0_BASE, 0, RVX_GPIO_LOW); // Assert GPIO-controlled CS line for the second device.
- * uint8_t received_2 = rvx_spi_transfer(RVX_SPI0_BASE, 0xCD);
- * rvx_gpio_pin_write(RVX_GPIO0_BASE, 0, RVX_GPIO_HIGH); // Deassert GPIO-controlled CS line for the second device.
+ * rvx_gpio_pin_write(RVX_GPIO0, 0, RVX_GPIO_LOW); // Assert GPIO-controlled CS line for the second device.
+ * uint8_t received_2 = rvx_spi_transfer(RVX_SPI0, 0xCD);
+ * rvx_gpio_pin_write(RVX_GPIO0, 0, RVX_GPIO_HIGH); // Deassert GPIO-controlled CS line for the second device.
  * ```
  *
  * @param spi Base address of the SPI controller register block.
