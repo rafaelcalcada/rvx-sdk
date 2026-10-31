@@ -8,6 +8,7 @@
 #error "Unsupported XLEN"
 #endif
 
+#include "rvx_csr.h"
 #include "rvx_macros.h"
 
 #define RVX_SPI_STATUS_BUSY_MASK 0x1U ///< SPI transfer-in-progress status bit.
@@ -97,6 +98,63 @@ static inline void rvx_spi_set_clock_divider(RvxSpi *spi, uint16_t clock_divider
   if (clock_divider < 2U || clock_divider > 65534U || clock_divider % 2U != 0U)
     return;
   spi->RVX_SPI_DIVIDER_REG = (clock_divider / 2U) - 1U;
+}
+
+/**
+ * @brief Set the SPI clock frequency to the achievable frequency closest to the requested frequency.
+ *
+ * This function calculates the clock divider value needed to achieve the requested frequency as closely as possible
+ * and sets it in the SPI controller. Because the SPI controller uses an even integer clock divider between 2 and
+ * 65534, only frequencies equal to the RVX clock frequency divided by one of these values can be achieved exactly.
+ * When the requested frequency cannot be achieved exactly, the closest achievable frequency is selected.
+ *
+ * RVX must be initialized by calling `rvx_init()` before using this function, so that the RVX clock frequency is known.
+ *
+ * The value of `requested_frequency` must be between `rvx_clock_frequency/65534` and `rvx_clock_frequency/2`,
+ * inclusive. Invalid values are ignored without error and leave the SPI clock frequency unchanged.
+ *
+ * @return The calculated clock divider, or `0` if the requested frequency is invalid or RVX is not initialized. The
+ * returned value can be used to calculate the actual SPI frequency using `rvx_clock_frequency / returned_value`.
+ *
+ * Example usage:
+ * ```c
+ * // Configure SPI0 to 1 MHz or as close as possible to this frequency.
+ * rvx_spi_set_frequency(RVX_SPI0, 1000000U);
+ * ```
+ *
+ * @param spi Base address of the SPI controller register block.
+ * @param requested_frequency Requested SPI clock frequency in Hz (between `rvx_clock_frequency/65534` and
+ * `rvx_clock_frequency/2`, inclusive).
+ */
+static inline uint16_t rvx_spi_set_frequency(RvxSpi *spi, uint32_t requested_frequency)
+{
+  uint32_t clock_frequency;
+  RVX_CSR_READ(RVX_CSR_CLOCK_FREQUENCY_ADDR, clock_frequency);
+
+  if (requested_frequency == 0U || requested_frequency > clock_frequency / 2U || clock_frequency == 0U)
+    return 0U;
+
+  uint32_t lower_divider = clock_frequency / requested_frequency;
+  if (lower_divider < 2U)
+  {
+    rvx_spi_set_clock_divider(spi, 2U);
+    return 2U;
+  }
+  if (lower_divider >= 65534U)
+  {
+    rvx_spi_set_clock_divider(spi, 65534U);
+    return 65534U;
+  }
+
+  lower_divider -= lower_divider % 2U;
+  const uint32_t upper_divider = lower_divider + 2U;
+  const uint64_t lower_error_scaled = (uint64_t)(clock_frequency - requested_frequency * lower_divider) * upper_divider;
+  const uint64_t upper_error_scaled = ((uint64_t)requested_frequency * upper_divider - clock_frequency) * lower_divider;
+  const uint16_t selected_divider =
+      (uint16_t)(lower_error_scaled <= upper_error_scaled ? lower_divider : upper_divider);
+
+  rvx_spi_set_clock_divider(spi, selected_divider);
+  return selected_divider;
 }
 
 /**

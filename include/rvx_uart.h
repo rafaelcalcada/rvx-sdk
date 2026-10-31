@@ -8,6 +8,7 @@
 #error "Unsupported XLEN"
 #endif
 
+#include "rvx_csr.h"
 #include "rvx_macros.h"
 
 #define RVX_UART_STATUS_TX_READY_MASK 0x1U ///< UART transmit-ready status bit.
@@ -37,7 +38,7 @@ typedef struct RVX_ALIGNED RvxUart
 /**
  * @brief Set the UART controller clock divider, which determines the baud rate of the UART.
  *
- * The UART baud rate will be equal to the RVX clock frequency divided by the clock divider.
+ * The UART baud rate will be equal to the RVX clock frequency divided by the clock divider:
  *
  * `uart_baud_rate = rvx_clock_frequency / clock_divider`
  *
@@ -50,7 +51,6 @@ typedef struct RVX_ALIGNED RvxUart
  * rvx_init(&rvx_setup);
  *
  * // Set the UART clock divider to configure the baud rate to 9600 bps (12000000 / 1250 = 9600).
- * // Macro RVX_UART0 expands to the base address of UART0: ((RvxUart *)0x40000000U).
  * rvx_uart_set_clock_divider(RVX_UART0, 1250);
  * ```
  *
@@ -62,6 +62,55 @@ static inline void rvx_uart_set_clock_divider(RvxUart *uart, uint32_t clock_divi
   if (clock_divider == 0U)
     return;
   uart->RVX_UART_BAUD_REG = clock_divider;
+}
+
+/**
+ * @brief Set the UART baud rate to the achievable rate closest to the requested rate.
+ *
+ * This function calculates the clock divider value needed to achieve the requested baud rate as closely as possible and
+ * sets it in the UART controller. Because the UART controller uses an integer clock divider, only baud rates that
+ * divide the RVX clock frequency exactly (without remainder) can be achieved. When the exact rate cannot be achieved,
+ * the closest achievable rate is selected.
+ *
+ * RVX must be initialized by calling `rvx_init()` before using this function, so that the RVX clock frequency is known.
+ *
+ * The value of `requested_baud_rate` must be between 1 and the RVX clock frequency, inclusive. Invalid values are
+ * ignored without error and leave the UART baud rate unchanged.
+ *
+ * @return The calculated clock divider value used for setting the baud rate, or `0` if the requested baud rate is
+ * invalid or RVX is not initialized. The returned value can be used to calculate the actual baud rate achieved through
+ * the formula: `rvx_clock_frequency / returned_value`.
+ *
+ * Example usage:
+ * ```c
+ * // Configure UART0 to 9600 bps or as close as possible to this rate.
+ * rvx_uart_set_baud_rate(RVX_UART0, 9600U);
+ * ```
+ *
+ * @param uart Base address of the UART controller register block.
+ * @param requested_baud_rate Requested baud rate in Hz (must be between 1 and the RVX clock frequency, inclusive).
+ */
+static inline uint32_t rvx_uart_set_baud_rate(RvxUart *uart, uint32_t requested_baud_rate)
+{
+  uint32_t clock_frequency;
+  RVX_CSR_READ(RVX_CSR_CLOCK_FREQUENCY_ADDR, clock_frequency);
+
+  if (requested_baud_rate == 0U || requested_baud_rate > clock_frequency || clock_frequency == 0U)
+    return 0U;
+
+  const uint32_t lower_divider = clock_frequency / requested_baud_rate;
+  const uint32_t remainder = clock_frequency % requested_baud_rate;
+  if (remainder == 0U)
+  {
+    uart->RVX_UART_BAUD_REG = lower_divider;
+    return lower_divider;
+  }
+
+  const uint32_t upper_divider = lower_divider + 1U;
+  const uint64_t lower_error_scaled = (uint64_t)remainder * upper_divider;
+  const uint64_t upper_error_scaled = (uint64_t)(requested_baud_rate - remainder) * lower_divider;
+  uart->RVX_UART_BAUD_REG = lower_error_scaled <= upper_error_scaled ? lower_divider : upper_divider;
+  return uart->RVX_UART_BAUD_REG;
 }
 
 /**

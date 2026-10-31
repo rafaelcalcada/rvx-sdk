@@ -8,6 +8,7 @@
 #error "Unsupported XLEN"
 #endif
 
+#include "rvx_csr.h"
 #include "rvx_macros.h"
 
 /// @name Bit masks for I2C Status register.
@@ -76,6 +77,66 @@ static inline void rvx_i2c_set_clock_divider(RvxI2c *i2c, uint16_t clock_divider
   if (clock_divider < 2U || clock_divider > 65534U || clock_divider % 2U != 0U)
     return;
   i2c->RVX_I2C_DIVIDER_REG = (clock_divider / 2U) - 1U;
+}
+
+/**
+ * @brief Set the I2C clock frequency to the achievable frequency closest to the requested frequency.
+ *
+ * This function calculates the clock divider value needed to achieve the requested frequency as closely as possible
+ * and sets it in the I2C controller. Because the I2C controller uses an even integer clock divider between 2 and
+ * 65534, only frequencies equal to the RVX clock frequency divided by one of these values can be achieved exactly.
+ * If a valid requested frequency is outside the achievable range, the nearest achievable frequency is selected.
+ *
+ * RVX must be initialized by calling `rvx_init()` before using this function, so that the RVX clock frequency is known.
+ *
+ * The value of `requested_frequency` must be greater than 0 and no greater than half the RVX clock frequency.
+ * Frequencies below the minimum achievable frequency are set to the minimum achievable frequency. Invalid values are
+ * ignored without error and leave the I2C clock frequency unchanged.
+ *
+ * @return The selected clock divider, or `0` if the requested frequency is invalid or RVX is not initialized. The
+ *         returned value can be used to calculate the actual I2C frequency using `rvx_clock_frequency / returned_value`.
+ *
+ * Example usage:
+ * ```c
+ * // Configure I2C0 to 100 kHz or as close as possible to this frequency.
+ * rvx_i2c_set_frequency(RVX_I2C0, 100000U);
+ * ```
+ *
+ * @param i2c Base address of the I2C controller register block.
+ * @param requested_frequency Requested I2C clock frequency in Hz (greater than 0 and no greater than half the RVX
+ *                            clock frequency).
+ */
+static inline uint16_t rvx_i2c_set_frequency(RvxI2c *i2c, uint32_t requested_frequency)
+{
+  uint32_t clock_frequency;
+  RVX_CSR_READ(RVX_CSR_CLOCK_FREQUENCY_ADDR, clock_frequency);
+
+  if (requested_frequency == 0U || requested_frequency > clock_frequency / 2U || clock_frequency == 0U)
+    return 0U;
+
+  uint32_t lower_divider = clock_frequency / requested_frequency;
+  if (lower_divider < 2U)
+  {
+    rvx_i2c_set_clock_divider(i2c, 2U);
+    return 2U;
+  }
+  if (lower_divider >= 65534U)
+  {
+    rvx_i2c_set_clock_divider(i2c, 65534U);
+    return 65534U;
+  }
+
+  lower_divider -= lower_divider % 2U;
+  const uint32_t upper_divider = lower_divider + 2U;
+  const uint64_t lower_error_scaled =
+      ((uint64_t)clock_frequency - (uint64_t)requested_frequency * lower_divider) * upper_divider;
+  const uint64_t upper_error_scaled =
+      ((uint64_t)requested_frequency * upper_divider - clock_frequency) * lower_divider;
+  const uint16_t selected_divider =
+      (uint16_t)(lower_error_scaled <= upper_error_scaled ? lower_divider : upper_divider);
+
+  rvx_i2c_set_clock_divider(i2c, selected_divider);
+  return selected_divider;
 }
 
 /**

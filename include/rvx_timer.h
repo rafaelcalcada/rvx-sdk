@@ -38,7 +38,6 @@ typedef struct RVX_ALIGNED RvxTimer
  *
  * ```c
  * // Start the TIMER0 counter.
- * // Macro RVX_TIMER0 expands to the base address of TIMER0: ((RvxTimer *)0x40001000U).
  * rvx_timer_start_counter(RVX_TIMER0);
  * ```
  *
