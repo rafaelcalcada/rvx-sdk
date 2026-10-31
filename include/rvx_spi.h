@@ -269,8 +269,8 @@ static inline void rvx_spi_write(RvxSpi *spi, const uint8_t tx_data)
  * const RvxSetup rvx_setup = {.clock_frequency = 12000000U, .trap_handler = RVX_DEFAULT_TRAP_HANDLER};
  * rvx_init(&rvx_setup);
  *
- * // Set the SPI clock divider to configure the SPI clock frequency to 1 MHz (12000000 / 12 = 1000000).
- * rvx_spi_set_clock_divider(RVX_SPI0, 12);
+ * // Configure the SPI clock frequency to 1 MHz or as close as possible.
+ * rvx_spi_set_frequency(RVX_SPI0, 1000000U);
  *
  * // Transmit 0xAB to a subordinate device connected to the CS line controlled
  * // by the SPI controller and receive a byte simultaneously.
