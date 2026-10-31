@@ -232,31 +232,4 @@ static inline void rvx_uart_print(RvxUart *uart, const char *str)
     ;
 }
 
-/**
- * @brief Print a null-terminated string over the UART, followed by a newline character.
- *
- * The string is transmitted as-is, followed by a newline character (`\n`).
- *
- * This function will block until the UART has transmitted the entire string
- * and the newline character.
- *
- * Example usage:
- *
- * ```c
- * // Send "Hello, UART!" followed by a newline over UART0.
- * // The call below will block until the entire string and the newline are transmitted.
- * rvx_uart_println(RVX_UART0, "Hello, UART!");
- * ```
- *
- * @param uart Base address of the UART controller register block.
- * @param str Pointer to the null-terminated C string to transmit.
- */
-static inline void rvx_uart_println(RvxUart *uart, const char *str)
-{
-  rvx_uart_print(uart, str);
-  rvx_uart_write(uart, '\n');
-  while (!rvx_uart_tx_ready(uart))
-    ;
-}
-
 #endif // __RVX_UART_H

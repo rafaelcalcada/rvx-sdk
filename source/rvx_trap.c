@@ -6,7 +6,7 @@
 __attribute__((weak)) void rvx_exception_handler(uint32_t exception_cause)
 {
   (void)exception_cause;
-  rvx_uart_println((RvxUart *)0x40000000U, "ERROR: rvx_exception_handler not implemented.");
+  rvx_uart_print((RvxUart *)0x40000000U, "ERROR: rvx_exception_handler not implemented.\n");
   while (1)
     ;
 }
@@ -14,7 +14,7 @@ __attribute__((weak)) void rvx_exception_handler(uint32_t exception_cause)
 __attribute__((weak)) void rvx_interrupt_handler(uint32_t interrupt_cause)
 {
   (void)interrupt_cause;
-  rvx_uart_println((RvxUart *)0x40000000U, "ERROR: rvx_interrupt_handler not implemented.");
+  rvx_uart_print((RvxUart *)0x40000000U, "ERROR: rvx_interrupt_handler not implemented.\n");
   while (1)
     ;
 }
