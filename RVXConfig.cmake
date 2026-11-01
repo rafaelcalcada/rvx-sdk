@@ -12,7 +12,7 @@ if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
 endif()
 
 if(NOT DEFINED RVX_ARCH)
-  if(DEFINED RVX_ENABLE_ZMMUL AND RVX_ENABLE_ZMMUL)
+  if(DEFINED RVX_ENABLE_ZMMUL_EXTENSION AND RVX_ENABLE_ZMMUL_EXTENSION)
     set(RVX_ARCH "rv32i_zicsr_zmmul")
     message(STATUS "Selected RISC-V architecture for RVX: ${RVX_ARCH}")
     message(STATUS "Zmmul extension enabled.")
