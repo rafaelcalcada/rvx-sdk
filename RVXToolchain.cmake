@@ -42,5 +42,9 @@ set(CMAKE_SIZE "${RVX_SIZE}" CACHE FILEPATH "size tool" FORCE)
 set(CMAKE_SYSTEM_NAME Generic CACHE STRING "Target system name" FORCE)
 set(CMAKE_SYSTEM_PROCESSOR riscv32 CACHE STRING "Target processor" FORCE)
 
+if(NOT DEFINED CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build.")
+endif()
+
 set(CMAKE_C_COMPILER_FORCED TRUE CACHE BOOL "Skip compiler detection" FORCE)
 set(CMAKE_ASM_COMPILER_FORCED TRUE CACHE BOOL "Skip compiler detection" FORCE)
