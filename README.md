@@ -2,7 +2,7 @@
 
 ## About the RVX SDK
 
-RVX SDK is the Software Development Kit for [RVX](https://github.com/rafaelcalcada/rvx), designed to make developing software for RVX fast, easy, and maintainable. It provides a complete embedded software stack for RVX, including peripheral drivers, startup code, linker scripts, and build integration.
+RVX SDK is the Software Development Kit for [RVX](https://github.com/rafaelcalcada/rvx), designed to make developing for RVX fast and easy. It provides the peripheral drivers, startup code, linker scripts, and build configuration required to develop applications for RVX.
 
 ### Features
 
@@ -12,9 +12,7 @@ RVX SDK is the Software Development Kit for [RVX](https://github.com/rafaelcalca
 
 ### Documentation
 
-For instructions on how to develop applications using the RVX SDK, see the [RVX Developer Guide](https://rafaelcalcada.github.io/rvx/devguide).
-
-For the complete API documentation, see the [RVX API Reference](https://rafaelcalcada.github.io/rvx/api).
+For instructions on how to create applications for RVX using the SDK, see the [RVX Developer Guide](https://rafaelcalcada.github.io/rvx/developer-guide).
 
 ### License
 
